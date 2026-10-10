@@ -55,6 +55,10 @@ def test_live_fixture_audit_has_coverage_and_harness_evidence(tmp_path):
     assert case["evidence"]["snapshot_count"] == 6
     assert case["evidence"]["symbols"]["SPY"]["previous_session_covered"]
     assert case["evidence"]["symbols"]["AAPL"]["eligible_articles"] == 1
+    assert case["evidence"]["symbols"]["AAPL"]["missing_last_21_sessions"] == []
+    assert case["evidence"]["observed_bar_field_types"]["t"] == ["str"]
+    assert "headline" in case["evidence"]["observed_news_fields"]
+    assert case["provider_failures"] == []
     assert case["trailforge"]["state"] == "COMPLETED"
     assert case["trailforge"]["verify_evidence"]["verdict"] == "PASS"
     assert case["outcome_probe"]["state"] == "COMPLETE"
@@ -65,6 +69,62 @@ def test_live_fixture_audit_has_coverage_and_harness_evidence(tmp_path):
     with pipeline.store.connect() as db:
         assert db.execute("SELECT COUNT(*) FROM price_bars").fetchone()[0] == 147
     assert paths[0].is_file() and paths[1].is_file()
+
+
+def test_live_audit_reports_sanitized_entitlement_failure(tmp_path):
+    from marketpulse.alpaca import ProviderError
+
+    class ForbiddenClient:
+        failures = []
+
+        def pages(self, source, *args, **kwargs):
+            self.failures.append({"source": source, "status_code": 403, "reason": "http_error"})
+            raise ProviderError(source, 403, "http_error")
+
+    report, _ = run_audit(
+        (AuditCase("ordinary", date(2026, 10, 9)),),
+        pipeline=ExtractionPipeline(tmp_path / "runtime", ForbiddenClient(), clock=lambda: NOW),
+        feed="sip", adjustment="split", include_content=False,
+        output_dir=tmp_path / "reports", clock=lambda: NOW,
+    )
+    assert report["status"] == "BLOCKED"
+    assert report["cases"][0]["provider_failures"][0]["status_code"] == 403
+    assert "secret" not in json.dumps(report)
+
+
+def test_rolling_gap_is_detected_even_with_21_bars(tmp_path):
+    from marketpulse.clock import session_window, utc_iso
+
+    class GapClient(FakeClient):
+        def pages(self, source, endpoint, params, item_key, *, max_pages):
+            pages = super().pages(source, endpoint, params, item_key, max_pages=max_pages)
+            if source == "alpaca_bars":
+                bars = pages[0].payload["bars"]["AAPL"]
+                bars.pop(-2)
+                bars.append({**bars[0], "t": utc_iso(session_window(date(2026, 10, 9)).bars_start)})
+            return pages
+
+    report, _ = run_audit(
+        (AuditCase("ordinary", date(2026, 10, 9)),),
+        pipeline=ExtractionPipeline(tmp_path / "runtime", GapClient(), clock=lambda: NOW),
+        feed="iex", adjustment="split", include_content=False,
+        output_dir=tmp_path / "reports", clock=lambda: NOW, page_size=10,
+    )
+    assert report["cases"][0]["evidence"]["symbols"]["AAPL"]["prior_daily_bar_dates"] == 21
+    assert report["status"] == "BLOCKED"
+    assert "rolling_window_gap" in report["cases"][0]["integrity_flags"]
+
+
+def test_plan_cli_does_not_read_env_file(tmp_path, monkeypatch):
+    from marketpulse import cli
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("plan mode must not read credential files")
+
+    monkeypatch.setattr(cli, "load_alpaca_settings", forbidden)
+    assert cli.main(["audit", "--plan", "--case", "ordinary:2026-10-09",
+                     "--env-file", str(tmp_path / "missing"),
+                     "--data-dir", str(tmp_path)]) == 0
 
 
 def test_missing_outcome_symbol_blocks_label_source(tmp_path):

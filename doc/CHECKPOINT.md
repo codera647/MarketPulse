@@ -1,7 +1,8 @@
 # MarketPulse checkpoint for the next agent
 
 Last checked: 2026-10-10 (Asia/Karachi). This is a handoff record, not a claim
-that the whole product is built or that live market data has been validated.
+that the whole product is built or a complete historical dataset is validated.
+M02 now has bounded live IEX/historical SIP access evidence.
 
 ## Project in one minute
 
@@ -48,13 +49,13 @@ actual capabilities.
 | Area | Current implementation |
 | --- | --- |
 | Python package/CLI | `pyproject.toml` and `src/marketpulse/cli.py`; `marketpulse extract --session ...` and bounded `backfill --start ... --end ...` (up to 31 exchange sessions per invocation). |
-| Market sources | `src/marketpulse/alpaca.py` calls Alpaca historical news and multi-symbol daily stock-bar endpoints with credentials from environment variables, bounded pagination, response-size limit, retries/timeouts, and request-ID capture. |
+| Market sources | `config.py` loads literal local `.env` or process values without exposing keys; approved data host only, trading endpoint recognition without use, and no redirects. `alpaca.py` calls historical news/daily bars with bounded pagination, response-size limit, retries/timeouts, request IDs, and sanitized provider failures. |
 | Calendar and eligibility | `clock.py` uses the NYSE calendar and timezone-aware UTC; `normalize.py` rejects same-day/future bars and post-cutoff article versions, checks OHLC and at least 21 distinct prior bar dates per symbol by default with the latest bar on the previous session, and builds six hash-identified snapshots. The feature gate additionally requires 21 consecutive exchange sessions. |
 | Raw and product storage | `storage.py` saves content-addressed raw JSON plus normalized article/bar metadata, web captures, extraction jobs, and snapshots in application SQLite. Extraction materialization is one application-DB transaction. No Parquet training export exists yet. |
 | Trailforge | `extraction.py` uses pinned neutral `Goal`/`Task`/`Harness` with explicit `CANDIDATE_WRITE` fetch tasks and a typed `VerifiedResult` check. Trailforge has its own SQLite authority. Only a `COMPLETED` verified run can materialize accepted product snapshots. UNKNOWN provider outcomes are held, not silently retried. |
 | Agent-Reach | Pinned `WebChannel` is wired to opt-in `--web-url` capture through Jina Reader. It is supplementary evidence, **not** the canonical historical price/news source or an automatic prediction feature. No social-cookie/login channels or system-wide installation were used. |
 | Provenance | Manifest records source/feed/adjustment, cutoff and news query end, article/bar counts, six snapshot hashes, availability tier, freshness flag, and Trailforge receipt IDs. Historical retrieval is `HISTORICAL_APPROXIMATE`; a genuinely recorded pre-cutoff capture can be `RECORDED_STRICT`. `fresh_for_0900` is a separate provisional five-minute freshness check. |
-| Source audit | `marketpulse audit` writes dated JSON/Markdown reports for explicit ordinary, earnings, early-close, correction, and holiday cases. Plan mode needs no credentials. Live mode runs pre-open extraction plus a separate Trailforge-supervised same-day outcome-bar probe. It records per-symbol coverage, raw page hashes, source request IDs, and unresolved gates; outcome bars do not enter prediction snapshots. See [SOURCE_AUDIT](SOURCE_AUDIT.md). |
+| Source audit | Dated ordinary, post-earnings, early-close, holiday and revision-candidate audits passed for IEX and historical SIP. Includes observed schema/types, page traversal, required-21-session gaps, request IDs, and separate verified outcome probes. Reports remain `TECHNICAL_REVIEW_REQUIRED`; see [M02 evidence](M02_SOURCE_AUDIT_2026-10-10.md). |
 | Provisional label preview | `marketpulse label-preview` reads one saved pre-open snapshot and one separate verified outcome job. It validates matching session/feed/adjustment, immutable raw outcome pages and post-close receipt, then computes the symmetric `UP`/`DOWN`/`NO_MATERIAL_MOVE` class under an explicit threshold. It writes nothing and always marks the result not ready for training. See [LABELS](LABELS.md). |
 | Pre-open feature preview | `marketpulse feature-preview` uses one shared `build_features` function on a saved snapshot. It validates raw-version agreement and 21 consecutive prior NYSE sessions, then outputs versioned lagged company/SPY price features and simple headline-count features. No outcome or Agent-Reach capture is an input. It writes nothing and is not a fitted model. See [FEATURES](FEATURES.md). |
 
@@ -73,7 +74,7 @@ An isolated project `.venv` exists. On this checkpoint, these commands passed:
 ```powershell
 cd F:\MarketPulse
 .\.venv\Scripts\python -m pytest -q
-# 25 passed
+# 51 passed
 .\.venv\Scripts\ruff check src tests
 # All checks passed!
 ```
@@ -86,9 +87,10 @@ UNKNOWN and no silent retry, pagination, post-cutoff revisions, idempotence,
 NYSE session/early-close behavior, source-audit coverage, separate outcome
 probing, missing-outcome blocking, and a read-only provisional label with
 hand-checked symmetric class boundaries, raw-source feature consistency,
-21-session rolling-window coverage, and no-news feature handling. This
-validates code paths, not real
-feed quality, real network access, or financial predictive value.
+21-session rolling-window coverage, and no-news feature handling. New tests
+cover dotenv loading, redaction, endpoint/redirect refusal, sanitized failures,
+pagination caps, audit rolling gaps, and relative read-only preview paths.
+Fixture tests validate code paths, not financial predictive value.
 
 The initial GitHub commit `8009cbd` also passed the Windows/Python 3.13
 [CI run](https://github.com/codera647/MarketPulse/actions/runs/38035607436):
@@ -101,15 +103,24 @@ A credential-free audit plan was generated with an ordinary session,
 early-close session, and holiday. It is marked `NOT_RUN` and lists missing
 earnings and correction examples; it is not a live-data verdict.
 
+M02 live audits subsequently passed for both feeds on four distinct sessions:
+2026-10-09, 2025-08-04, 2025-08-01, and 2025-11-28; 2025-11-27 was calendar-only.
+All seven price symbols had prior bars and separate verified outcome bars,
+with no required-window gaps. Six recent SIP snapshots passed the actual
+feature builder. Source choices, local report paths/hashes, successful news/bar
+pagination, and the preserved page-cap failure are in
+[M02 evidence](M02_SOURCE_AUDIT_2026-10-10.md). `.env` was not modified or exposed.
+
 ## Unverified gates and honest limitations
 
-1. **No live Alpaca run has occurred.** The user has now supplied credentials
-   in a local `.env`; loading and testing that file is the next pipeline step.
-   The current CLI reads process environment variables. Never request that
-   the user paste secrets in chat; have them set credentials locally. Account
-   access, IEX/SIP entitlement, request/response shape on real dates, historical
-   coverage, article text/metadata, rate limits, and data-use/retention rights
-   must be audited before calling extraction empirically complete.
+1. **Source access is sampled, not complete dataset/target certification.**
+   Local credentials load safely and both IEX/historical SIP work on the audited
+   dates. Paid-plan identity, recent/live SIP rights, monthly coverage, corporate
+   actions, rate ceilings, retention/training/sharing rights, and the actual
+   regular-session opening/closing convention remain open. The manifests mark
+   daily bars `PROVIDER_DAILY_NOT_CERTIFIED_REGULAR_SESSION`. Do not train
+   regular-session labels from them without verifying the convention or an
+   explicitly approved change in target. Article bodies were not requested.
 2. **Historical news is not proven point-in-time.** A current API response may
    not reproduce what an article said at 09:00 on an old date. Keep such replay
    labeled approximate. Do not train/evaluate as if revisions or original
@@ -130,25 +141,20 @@ earnings and correction examples; it is not a live-data verdict.
 
 ## Recommended next agent action
 
-GitHub setup and the initial push are complete. Continue with M02 (live data
-access and source audit). User authorization to commit/push at each completed
+GitHub setup and the M02 technical audit are complete. Next is M03 (a complete
+labeled historical dataset), subject to the open gates below. User
+authorization to commit/push at each completed
 milestone is recorded in root `AGENTS.md`. Update this checkpoint and
 `MILESTONES.md`, verify acceptance criteria, scan staged content for secrets,
 push normally, and only then close the matching GitHub milestone. The
 Windows/Python 3.13 GitHub Actions workflow passed for the initial commit;
 verify subsequent commits independently rather than assuming they are green.
 
-First run the commands above and inspect the current code/docs without
-changing the agreed six-stock scope. The user has already supplied local
-Alpaca credentials in `.env`; safely load them without exposing values, then
-use [SOURCE_AUDIT](SOURCE_AUDIT.md) to run the Stage 1
-live source audit. Select independently verified earnings and corrected-story
-dates; sample ordinary, holiday/early-close, and those event sessions for all
-six stocks and SPY. Confirm response schemas, page traversal, missingness,
-account entitlements, and retention terms. Save and inspect the dated audit
-result with concrete counts and gaps. Fix any
-extraction defects exposed by that evidence and add regression tests. Only
-then freeze the target/threshold/split contract and proceed to persisted labels,
-features/training and later prediction-specific
-Trailforge integration. Keep Agent-Reach web captures out of the model until a
-separate source-eligibility and point-in-time decision is documented.
+Read [M02 evidence](M02_SOURCE_AUDIT_2026-10-10.md) first. Before materializing
+training labels, verify the regular-session price convention and account data
+rights. Historical SIP is a preferred candidate, not a silently frozen choice.
+Define the label/threshold/split contract, then audit month-scale coverage and
+build resumable ingestion, separate persisted outcomes, and immutable dataset
+rows with lineage and missingness/leakage reports. Keep healthy no-news rows
+and approximate provenance. Do not inspect a final test while tuning settings.
+Keep Agent-Reach captures out of the model until independently approved.

@@ -8,7 +8,7 @@ Status terms: **agreed** by the user; **provisional** design default; **open** n
 | D02 | Research/paper demo, no real-money action | Agreed | Original project brief and planning discussion | Explicit new scope and independent risk review |
 | D03 | One 09:00 New York decision, regular open-to-close target | Provisional | Coherent with paper open-entry; no signal study yet | Feasibility shows unavailable data or uninformative target |
 | D04 | News window from prior regular close through cutoff | Provisional | Captures after-hours/pre-open events; train/validation ablation needed | Insufficient eligible events or leakage issue |
-| D05 | Benzinga news through Alpaca; Alpaca price bars | Provisional | APIs documented, account access untested | Coverage, rights, versioning, or feed quality fail |
+| D05 | Benzinga news through Alpaca; Alpaca price bars | Provisional; live samples audited | M02 verifies IEX and historical SIP on four sessions; rights, monthly coverage and regular-session convention remain open | Coverage, rights, versioning, or feed quality fail |
 | D06 | `UP/DOWN/NO_MATERIAL_MOVE` symmetric threshold | Open | Choose and freeze through training/validation plan | Label imbalance or cost interpretation |
 | D07 | Confidence-based `PAPER_LONG`, otherwise abstain/block | Provisional | Requires calibration and validation threshold | Calibration/coverage evidence insufficient |
 | D08 | Use Trailforge neutral Harness v0.1.0a1 for bounded prediction/replay runs | Provisional | PDF and pinned release support Goal/Task checks; integration spike pending | Latency or host-bridge cost outweighs recovery value |
@@ -17,11 +17,19 @@ Status terms: **agreed** by the user; **provisional** design default; **open** n
 | D11 | Broad global news, LLM explanations, broker execution | Deferred | Adds entity/rights/evaluation and risk work | Post-MVP measured need and new authorization |
 | D12 | Product name MarketPulse | Open | Working label only; Catalyst was suggested, not accepted | User selects a final name |
 | D13 | Agent-Reach as supplementary internet-access layer, not a historical price source | Agreed for extraction; usage boundary implemented | User requested Agent-Reach; its documented WebChannel is integrated behind explicit URL opt-in | A suitable licensed point-in-time web source is approved for model input |
-| D14 | Trailforge neutral Harness supervises extraction jobs | Implemented in local fixture tests; live gate open | Typed VERIFY, bounded artifacts, and separate SQLite authority tested | Real provider latency, account access, or recovery audit changes scope |
+| D14 | Trailforge neutral Harness supervises extraction jobs | Implemented and exercised on live M02 samples | Typed VERIFY, bounded artifacts, separate SQLite authority and separate outcome probes; recovery guarantees still unverified | Real provider latency, account access, or recovery audit changes scope |
+| D15 | Prefer historical SIP for M03 price research; never merge it with IEX | Provisional technical recommendation | Both sampled feeds work, but 27/28 matched outcome pairs differ in open or close; not evidence of live SIP access or official auction fills | Monthly coverage, rights, or regular-session convention fail |
 
 ## ADR-01: one provider pair first
 
 Question: which input sources minimize ambiguity for the first evaluation? Options: Alpaca news and bars; SEC filings plus another price source; several global news feeds; licensed institutional feed. Select Alpaca news and bars **provisionally** because ticker/date filtering, timestamps, and stock bars are documented. Price feed can be IEX or SIP with different coverage; do not mix them without recording the feed. The available plan, historical article versions, regular-session open/close quality, and data rights remain unverified. One-day spike samples each ticker/SPY across ordinary, earnings, holiday, and corrected-story dates. If it fails, consider SEC/company releases for event analysis or a provider with documented point-in-time versioning. Source: [Alpaca news](https://docs.alpaca.markets/us/reference/news-3), [bars](https://docs.alpaca.markets/us/reference/stockbars), [data plans](https://docs.alpaca.markets/us/docs/about-market-data-api).
+
+M02 update (2026-10-10): bounded live access is now verified for both historical
+feeds. Use [the audit](M02_SOURCE_AUDIT_2026-10-10.md) rather than interpreting
+the original account-untested paragraph as current status. Headline/metadata
+research stays approximate; full bodies, data rights and the regular-session
+label convention are still open. M02 completion does not clear the entire
+Stage 1 empirical gate.
 
 ## ADR-02: one horizon and time cutoff
 

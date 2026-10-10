@@ -1,8 +1,9 @@
 # Extraction implementation and evidence
 
-Status: code and local fixture tests implemented; **no live Alpaca account or
-real historical dataset has been validated**. This is the first build slice,
-not a completed prediction system. Entry point: [`README`](../README.md).
+Status: code, fixture tests, and bounded live IEX/historical SIP source audits
+are implemented. See [M02 evidence](M02_SOURCE_AUDIT_2026-10-10.md). This is not
+a complete training dataset or prediction system. Entry point:
+[`README`](../README.md).
 
 ## Scope and source authority
 
@@ -56,15 +57,17 @@ Post-cutoff article versions and same-day bars are excluded or rejected.
 
 ## Verification status and next gate
 
-Local tests cover successful extraction, empty news, missing/future bars,
+Local tests cover successful extraction, safe local credential loading,
+endpoint/redirect refusal, sanitized errors, empty news, missing/future bars,
 pre-cutoff capture, supplementary Agent-Reach isolation, pagination,
 post-cutoff revision, idempotency, and provider UNKNOWN. They do not prove
 Alpaca account entitlements, real feed coverage, publisher licensing, original
 article-version availability, an actual Agent-Reach/Jina response, or model
-quality. With user-provided credentials, the next gate is a real source audit
-across ordinary, earnings, holiday/early-close, and corrected-story dates.
-Record real request IDs, coverage gaps, feed differences, and permitted
-retention before training begins.
+quality. Live audits now cover ordinary, post-earnings, holiday/early-close,
+and revision-candidate cases; both feeds returned prices for all seven symbols.
+Reports preserve request IDs and hashes. A true corrected story/original
+version, account-specific rights, month-scale coverage, and the regular-session
+target convention still need evidence before training begins.
 
 The [source-audit runbook](SOURCE_AUDIT.md) describes the new dated audit
 command. Job-to-version link tables preserve which overlapping extraction

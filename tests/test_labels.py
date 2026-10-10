@@ -4,6 +4,7 @@ import json
 import sqlite3
 from datetime import date, datetime, timezone
 from decimal import Decimal
+from pathlib import Path
 
 import pytest
 from test_extraction import FakeClient
@@ -53,6 +54,13 @@ def test_label_preview_is_explicit_provisional_and_keeps_outcomes_separate(audit
     with sqlite3.connect(data_dir / "marketpulse.sqlite3") as db:
         assert db.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0] == 6
         assert db.execute("SELECT COUNT(*) FROM price_bars").fetchone()[0] == 147
+
+
+def test_label_preview_accepts_relative_data_directory(audited_fixture, monkeypatch):
+    data_dir, snapshots, outcome_key = audited_fixture
+    expected = preview_label(data_dir, snapshots["AAPL"], outcome_key, "0.01")
+    monkeypatch.chdir(data_dir.parent)
+    assert preview_label(Path("runtime"), snapshots["AAPL"], outcome_key, "0.01") == expected
 
 
 def test_label_preview_rejects_missing_or_incompatible_evidence(audited_fixture):

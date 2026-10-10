@@ -54,6 +54,7 @@ def preview_label(
     theta = _threshold(threshold)
     if len(snapshot_hash) != 64 or len(outcome_job_key) != 64:
         raise ValueError("snapshot and outcome IDs must be full SHA-256 hashes")
+    data_dir = data_dir.resolve()
     database_path = data_dir / "marketpulse.sqlite3"
     if not database_path.is_file():
         raise ValueError("application database does not exist")

@@ -10,6 +10,7 @@ from pathlib import Path
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
+import pandas_market_calendars as mcal
 from trailforge.ports import AdapterCapabilities, FunctionAdapter, VerifiedResult
 from trailforge.runtime import Goal, Harness, Task
 
@@ -20,7 +21,7 @@ from marketpulse.storage import RawStore, digest
 
 CASE_KINDS = {"ordinary", "earnings", "early_close", "correction", "holiday"}
 REQUIRED_CATEGORIES = {"ordinary", "earnings", "early_close", "correction", "holiday"}
-AUDIT_VERSION = "source-audit/1"
+AUDIT_VERSION = "source-audit/2"
 
 
 @dataclass(frozen=True)
@@ -254,6 +255,11 @@ def _case_evidence(pipeline: ExtractionPipeline, manifest: dict, case: AuditCase
     window = session_window(case.session)
     previous_day = window.previous_close.astimezone(ZoneInfo(ZONE)).date()
     by_symbol = {}
+    expected_dates = {
+        day.date() for day in mcal.get_calendar("NYSE").valid_days(
+            start_date=window.bars_start, end_date=previous_day
+        )[-21:]
+    }
     for symbol in SYMBOLS:
         dates = sorted({
             parse_time(row["bar_time"]).astimezone(ZoneInfo(ZONE)).date()
@@ -264,6 +270,9 @@ def _case_evidence(pipeline: ExtractionPipeline, manifest: dict, case: AuditCase
             "first_bar_date": dates[0].isoformat() if dates else None,
             "latest_bar_date": dates[-1].isoformat() if dates else None,
             "previous_session_covered": bool(dates and dates[-1] == previous_day),
+            "missing_last_21_sessions": sorted(
+                day.isoformat() for day in expected_dates - set(dates)
+            ),
             "eligible_articles": next(
                 (row["news_count"] for row in snapshot_rows if row["symbol"] == symbol),
                 None,
@@ -274,6 +283,11 @@ def _case_evidence(pipeline: ExtractionPipeline, manifest: dict, case: AuditCase
     raw_articles = [
         item for row in news_pages for item in pipeline.raw.get(row["digest"])["payload"]["news"]
     ]
+    raw_bars = [
+        item for row in bar_pages
+        for items in pipeline.raw.get(row["digest"])["payload"]["bars"].values()
+        for item in items
+    ]
     result = {
         "provider_request_ids": {
             "news": [row["request_id"] for row in news_pages],
@@ -283,6 +297,25 @@ def _case_evidence(pipeline: ExtractionPipeline, manifest: dict, case: AuditCase
         "news_pages": len(news_pages),
         "bar_pages": len(bar_pages),
         "raw_news_items": len(raw_articles),
+        "observed_news_fields": sorted({field for item in raw_articles for field in item}),
+        "observed_bar_fields": sorted({field for item in raw_bars for field in item}),
+        "observed_news_field_types": {
+            field: sorted({type(item[field]).__name__ for item in raw_articles if field in item})
+            for field in sorted({field for item in raw_articles for field in item})
+        },
+        "observed_bar_field_types": {
+            field: sorted({type(item[field]).__name__ for item in raw_bars if field in item})
+            for field in sorted({field for item in raw_bars for field in item})
+        },
+        "observed_news_sources": sorted({str(item.get("source", "")) for item in raw_articles}),
+        "news_pagination_traversed": len(news_pages) > 1,
+        "bars_pagination_traversed": len(bar_pages) > 1,
+        "post_cutoff_revision_items": sum(
+            parse_time(item["updated_at"]) > window.cutoff for item in raw_articles
+        ),
+        "explicit_correction_headline_candidates": sum(
+            "correction" in str(item.get("headline", "")).casefold() for item in raw_articles
+        ),
         "eligible_article_versions": len(article_rows),
         "raw_news_with_content": sum(bool(item.get("content")) for item in raw_articles),
         "updated_after_created_candidates": sum(
@@ -374,10 +407,13 @@ def run_audit(
     include_content: bool,
     output_dir: Path,
     clock=None,
+    page_size: int | None = None,
 ) -> tuple[dict, tuple[Path, Path]]:
     validate_cases(cases)
     if feed not in {"iex", "sip"} or adjustment not in {"raw", "split", "all"}:
         raise ValueError("invalid feed or adjustment")
+    if page_size is not None and not 10 <= page_size <= 50:
+        raise ValueError("audit page size must be between 10 and 50")
     now = clock() if clock is not None else datetime.now(timezone.utc)
     if now.tzinfo is None:
         raise ValueError("audit clock must be timezone-aware")
@@ -394,6 +430,8 @@ def run_audit(
         "feed": feed,
         "adjustment": adjustment,
         "include_content": include_content,
+        "provider_page_size_override": page_size,
+        "price_convention": "PROVIDER_DAILY_NOT_CERTIFIED_REGULAR_SESSION",
         "cases": [],
         "missing_case_categories": sorted(REQUIRED_CATEGORIES - {case.kind for case in cases}),
         "unresolved_gates": [],
@@ -405,11 +443,14 @@ def run_audit(
         elif planned:
             item.update(status="NOT_RUN", note="credentials/network not used")
         else:
+            failure_start = len(getattr(pipeline.client, "failures", []))
             try:
                 manifest = pipeline.run(
                     ExtractionConfig(
                         case.session, feed=feed, adjustment=adjustment,
                         include_content=include_content,
+                        news_page_size=page_size or 50,
+                        bar_page_size=page_size or 10000,
                     )
                 )
                 item["job_key"] = manifest["job_key"]
@@ -437,6 +478,9 @@ def run_audit(
                     if any(not row["previous_session_covered"]
                            for row in evidence["symbols"].values()):
                         flags.append("previous_session_gap")
+                    if any(row["missing_last_21_sessions"]
+                           for row in evidence["symbols"].values()):
+                        flags.append("rolling_window_gap")
                     item["integrity_flags"] = flags
                     if flags:
                         item["status"] = "CASE_MISMATCH"
@@ -465,6 +509,7 @@ def run_audit(
                 # Do not dump provider bodies, URLs with query tokens, or credentials.
                 item.update(status="ERROR", error_type=type(error).__name__,
                             note="inspect local logs/provider entitlement; no acceptance")
+            item["provider_failures"] = getattr(pipeline.client, "failures", [])[failure_start:]
         report["cases"].append(item)
     if not planned:
         report["status"] = (

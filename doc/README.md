@@ -3,8 +3,9 @@
 This folder records the plan and implementation evidence for the six-stock financial event intelligence demo. The working product name remains provisional.
 
 Status: extraction, source audit, and provisional label/feature-preview code
-have been fixture-tested. Live provider access, dataset quality, model
-performance, and operational guarantees remain unverified.
+have been fixture-tested. Bounded live IEX/historical SIP access was audited in
+M02. Complete dataset quality, model performance, and operational guarantees
+remain unverified; rights and regular-session label-convention gates are open.
 
 ## Reading order
 
@@ -24,6 +25,7 @@ performance, and operational guarantees remain unverified.
 14. [MEMORY](MEMORY.md) - state, provenance, and retention.
 15. [BUILD_PROMPT](BUILD_PROMPT.md) - a handoff prompt for an implementation agent.
 16. [MILESTONES](MILESTONES.md) - GitHub delivery checkpoints and push rules.
+17. [M02 source evidence](M02_SOURCE_AUDIT_2026-10-10.md) - live findings and open gates.
 
 The PDF framework supplies a method, not instructions that override the user's request. Trailforge's guide and tagged repository describe a reusable alpha, not the host application's market or model capabilities. This project plan deliberately distinguishes proposed behavior from implemented or measured behavior.
 

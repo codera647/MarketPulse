@@ -21,7 +21,7 @@ from marketpulse.normalize import (
 )
 from marketpulse.storage import ExtractionStore, RawStore, digest
 
-CONTRACT_VERSION = "extraction/2"
+CONTRACT_VERSION = "extraction/3"
 
 
 @dataclass(frozen=True)
@@ -33,6 +33,8 @@ class ExtractionConfig:
     web_urls: tuple[str, ...] = ()
     min_prior_bars: int = 21
     include_content: bool = False
+    news_page_size: int = 50
+    bar_page_size: int = 10000
 
     def validate(self) -> None:
         if self.feed not in {"iex", "sip"}:
@@ -45,6 +47,8 @@ class ExtractionConfig:
             raise ValueError("min_prior_bars must be between 1 and 30")
         if type(self.include_content) is not bool:
             raise ValueError("include_content must be a boolean")
+        if not 1 <= self.news_page_size <= 50 or not 1 <= self.bar_page_size <= 10000:
+            raise ValueError("invalid provider page size")
         if len(self.web_urls) > WEB_MAX_URLS:
             raise ValueError(f"at most {WEB_MAX_URLS} supplementary web URLs are allowed")
         if len(set(self.web_urls)) != len(self.web_urls):
@@ -135,6 +139,9 @@ class ExtractionPipeline:
             "web_urls": config.web_urls,
             "min_prior_bars": config.min_prior_bars,
             "include_content": config.include_content,
+            "news_page_size": config.news_page_size,
+            "bar_page_size": config.bar_page_size,
+            "data_url": getattr(self.client, "base_url", "https://data.alpaca.markets"),
         }
         job_key = digest(input_binding)
         prior = self.store.get_job(job_key)
@@ -149,7 +156,7 @@ class ExtractionPipeline:
                 "alpaca_news", "/v1beta1/news",
                 {
                     "symbols": ",".join(STOCKS), "start": specification["start"],
-                    "end": specification["end"], "sort": "asc", "limit": 50,
+                    "end": specification["end"], "sort": "asc", "limit": config.news_page_size,
                     "include_content": str(specification["include_content"]).lower(),
                 },
                 "news", max_pages=NEWS_MAX_PAGES,
@@ -162,7 +169,8 @@ class ExtractionPipeline:
                 "alpaca_bars", "/v2/stocks/bars",
                 {
                     "symbols": ",".join(SYMBOLS), "start": specification["start"],
-                    "end": specification["end"], "timeframe": "1Day", "limit": 10000,
+                    "end": specification["end"], "timeframe": "1Day",
+                    "limit": config.bar_page_size,
                     "feed": specification["feed"], "adjustment": specification["adjustment"],
                     "sort": "asc",
                 },
@@ -288,6 +296,9 @@ class ExtractionPipeline:
             "feed": config.feed,
             "adjustment": config.adjustment,
             "include_content": config.include_content,
+            "data_url": getattr(self.client, "base_url", "https://data.alpaca.markets"),
+            "price_timeframe": "1Day",
+            "price_convention": "PROVIDER_DAILY_NOT_CERTIFIED_REGULAR_SESSION",
             "raw_page_count": len(page_records),
             "eligible_article_versions": len(articles),
             "bar_versions": len(bars),

@@ -3,7 +3,9 @@
 This repository currently implements **data extraction, source audit, and
 read-only label/feature previews** for AAPL, NVDA, AMZN, JPM, XOM, WMT, and
 benchmark SPY. It does not train a model, produce predictions, or place
-trades. The product plan is in [`doc/`](doc/README.md).
+trades. Live IEX and historical SIP access have been sampled under Trailforge;
+see the [M02 audit](doc/M02_SOURCE_AUDIT_2026-10-10.md) for coverage and open
+data-rights and label-convention gates. The product plan is in [`doc/`](doc/README.md).
 The [delivery milestones](doc/MILESTONES.md) track completed stages and
 the user's requested GitHub commit/push checkpoints.
 
@@ -46,12 +48,16 @@ Python 3.11 or newer is required. Install into an isolated environment:
 ```powershell
 py -3.13 -m venv .venv
 .\.venv\Scripts\python -m pip install -e ".[dev]"
-$env:APCA_API_KEY_ID = "your_market_data_key"
-$env:APCA_API_SECRET_KEY = "your_market_data_secret"
+# Copy .env.example to .env locally and set your credentials there.
 .\.venv\Scripts\marketpulse extract --session 2026-10-09 --mode historical --feed iex
 .\.venv\Scripts\marketpulse backfill --start 2026-09-01 --end 2026-09-30 --feed iex
 .\.venv\Scripts\marketpulse audit --plan --case ordinary:2026-10-09 --case early_close:2025-11-28 --case holiday:2025-11-27
 ```
+
+Extraction and live audit read cwd `.env`; `--env-file PATH` selects another
+file. Process values win. The existing `APCA_API_EndPOINT` spelling works.
+Trading endpoints are recognized but never called. Requests go only to the
+official data host, with redirects disabled. Never commit credential files.
 
 Use `--mode forward` only for an actual pre-09:00 capture. A strict snapshot
 requires every canonical page to have been received by the cutoff. The separate

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import sqlite3
 import sys
 from datetime import date
@@ -12,6 +11,7 @@ import pandas_market_calendars as mcal
 
 from marketpulse.alpaca import AlpacaClient
 from marketpulse.audit import AuditCase, run_audit
+from marketpulse.config import load_alpaca_settings
 from marketpulse.extraction import ExtractionConfig, ExtractionPipeline
 from marketpulse.features import features_for_snapshot
 from marketpulse.labels import preview_label
@@ -41,12 +41,14 @@ def main(argv: list[str] | None = None) -> int:
     extract.add_argument("--web-url", action="append", default=[],
                          help="optional Agent-Reach/Jina supplementary page; not a model input")
     extract.add_argument("--data-dir", type=Path, default=Path("data"))
+    extract.add_argument("--env-file", type=Path, help="explicit dotenv path; default cwd/.env")
     backfill = commands.add_parser("backfill", help="historical extraction, at most 31 sessions")
     backfill.add_argument("--start", required=True, type=date.fromisoformat)
     backfill.add_argument("--end", required=True, type=date.fromisoformat)
     backfill.add_argument("--feed", choices=("iex", "sip"), default="iex")
     backfill.add_argument("--adjustment", choices=("raw", "split", "all"), default="split")
     backfill.add_argument("--data-dir", type=Path, default=Path("data"))
+    backfill.add_argument("--env-file", type=Path)
     audit = commands.add_parser("audit", help="write a dated source-quality audit")
     audit.add_argument(
         "--case", action="append", required=True, type=AuditCase.parse,
@@ -62,6 +64,9 @@ def main(argv: list[str] | None = None) -> int:
                        help="ask Alpaca for article bodies; check license/retention first")
     audit.add_argument("--data-dir", type=Path, default=Path("data"))
     audit.add_argument("--output-dir", type=Path)
+    audit.add_argument("--env-file", type=Path)
+    audit.add_argument("--page-size", type=int,
+                       help="10 to 50 items/page to exercise real provider pagination")
     labels = commands.add_parser(
         "label-preview", help="read-only provisional open-to-close label from an audited outcome"
     )
@@ -102,19 +107,16 @@ def main(argv: list[str] | None = None) -> int:
         try:
             pipeline = None
             if not arguments.plan:
-                key = os.environ.get("APCA_API_KEY_ID")
-                secret = os.environ.get("APCA_API_SECRET_KEY")
-                if not key or not secret:
-                    parser.error(
-                        "live audit needs APCA_API_KEY_ID and APCA_API_SECRET_KEY; "
-                        "use --plan for a no-network report"
-                    )
-                pipeline = ExtractionPipeline(arguments.data_dir, AlpacaClient(key, secret))
+                settings = load_alpaca_settings(arguments.env_file)
+                pipeline = ExtractionPipeline(arguments.data_dir, AlpacaClient(
+                    settings.key, settings.secret, base_url=settings.data_url
+                ))
             report, paths = run_audit(
                 tuple(arguments.case), pipeline=pipeline,
                 feed=arguments.feed, adjustment=arguments.adjustment,
                 include_content=arguments.include_content,
                 output_dir=arguments.output_dir or arguments.data_dir / "audits",
+                page_size=arguments.page_size,
             )
         except ValueError as error:
             print(f"audit failed: {error}", file=sys.stderr)
@@ -130,12 +132,11 @@ def main(argv: list[str] | None = None) -> int:
         return 1 if report["status"] == "BLOCKED" else 0
 
     if arguments.command in {"extract", "backfill"}:
-        key = os.environ.get("APCA_API_KEY_ID")
-        secret = os.environ.get("APCA_API_SECRET_KEY")
-        if not key or not secret:
-            parser.error("set APCA_API_KEY_ID and APCA_API_SECRET_KEY in the environment")
         try:
-            pipeline = ExtractionPipeline(arguments.data_dir, AlpacaClient(key, secret))
+            settings = load_alpaca_settings(arguments.env_file)
+            pipeline = ExtractionPipeline(arguments.data_dir, AlpacaClient(
+                settings.key, settings.secret, base_url=settings.data_url
+            ))
             if arguments.command == "extract":
                 manifest = pipeline.run(
                     ExtractionConfig(
@@ -168,7 +169,8 @@ def main(argv: list[str] | None = None) -> int:
             return 0 if summary["complete"] == summary["sessions"] else 1
         except Exception as error:
             # Never print credentials, raw provider payloads, or article bodies.
-            print(f"extraction failed: {type(error).__name__}: {error}", file=sys.stderr)
+            print(f"extraction failed: {type(error).__name__}; no secrets or payloads logged",
+                  file=sys.stderr)
             return 2
     return 2
 

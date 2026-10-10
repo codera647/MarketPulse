@@ -1,9 +1,9 @@
 # Source-audit runbook
 
-Status on 2026-10-10: command implemented and fixture-tested. **No live Alpaca
-source audit has run**, because market-data credentials are not available in
-this environment. A plan-mode report is evidence of the intended audit cases,
-not evidence of provider access or data quality.
+Status on 2026-10-10: bounded live IEX and historical SIP samples passed under
+Trailforge. See [M02 evidence](M02_SOURCE_AUDIT_2026-10-10.md) for dated coverage,
+pagination, source-use decisions, and remaining rights/target gates.
+A plan-mode report still proves only the intended audit cases.
 
 ## Purpose and boundaries
 
@@ -44,17 +44,15 @@ In PowerShell from `F:\MarketPulse`, plan without network or credentials:
 ```
 
 The report will explicitly mark missing earnings and correction cases. Add
-those only after selecting verified dates. For a live audit, set the Alpaca
-market-data keys locally and omit `--plan`:
+those only after selecting verified dates. For a live audit, put credentials
+in local `.env` (see root `.env.example`) and omit `--plan`:
 
 ```powershell
-$env:APCA_API_KEY_ID = "your_market_data_key"
-$env:APCA_API_SECRET_KEY = "your_market_data_secret"
 .\.venv\Scripts\marketpulse audit `
   --case ordinary:2026-10-09 `
   --case early_close:2025-11-28 `
   --case holiday:2025-11-27 `
-  --feed iex
+  --feed sip --page-size 50
 ```
 
 Do not paste credentials into chat or put them in the command line or source
@@ -63,11 +61,23 @@ stores the raw response; check the applicable license/retention rights first.
 Default is headline/metadata only. `--feed sip` is a separate entitlement and
 must be audited independently; do not merge SIP and IEX results silently.
 
+`--env-file PATH` selects one explicit file. Otherwise only cwd `.env` is read;
+process values win. Literal parsing does not expand variables or change the
+environment. `APCA_API_DATA_URL` is restricted to the official data origin.
+Recognized trading endpoints in `APCA_API_ENDPOINT` (case-insensitive name)
+or `APCA_API_BASE_URL` are not called. Plan/feature/label previews do not load keys.
+
+`--page-size 10..50` changes news and prior-bar page limits to exercise
+pagination. The 20-page cap still applies, so very small pages can cause an
+incomplete-price failure. Use 15 or 50 for the demonstrated windows. Changed
+fetch settings create new job identities; held runs are not reset.
+
 Each invocation writes uniquely named dated JSON and Markdown reports under
 `data/audits/` by default. The JSON includes per-symbol prior-bar counts,
 first/latest bar dates, previous-session coverage, article counts, raw page
 hashes, source request IDs, same-day outcome-bar coverage, Trailforge task
-state and verifier evidence. It
+state and verifier evidence, observed schema/types, last-21-session gaps,
+publisher, and sanitized HTTP failure metadata. It
 does not copy article bodies or credentials into the report. The raw captures,
 application SQLite, and Trailforge authority remain under `data/` and are
 excluded from Git.

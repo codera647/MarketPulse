@@ -193,6 +193,7 @@ class FakeResponse:
         self.payload = payload
         self.content = json.dumps(payload).encode("utf-8")
         self.headers = {"X-Request-ID": "test"}
+        self.status_code = 200
 
     def raise_for_status(self):
         return None
@@ -211,7 +212,8 @@ class FakeSession:
     def mount(self, *args):
         return None
 
-    def get(self, url, *, params, headers, timeout, stream):
+    def get(self, url, *, params, headers, timeout, stream, allow_redirects):
+        assert allow_redirects is False
         self.tokens.append(params.get("page_token"))
         if len(self.tokens) == 1:
             return FakeResponse({"news": [{"id": 1}], "next_page_token": "next"})

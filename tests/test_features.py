@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import sqlite3
 from datetime import date, datetime, time, timedelta, timezone
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import pandas_market_calendars as mcal
@@ -77,6 +78,13 @@ def test_shared_feature_builder_and_cli_use_only_preopen_snapshot(feature_fixtur
     assert no_news["feature_hash"] != apple["feature_hash"]
     with sqlite3.connect(data_dir / "marketpulse.sqlite3") as db:
         assert db.execute("SELECT COUNT(*) FROM price_bars").fetchone()[0] == 147
+
+
+def test_feature_preview_accepts_relative_data_directory(feature_fixture, monkeypatch):
+    data_dir, manifest = feature_fixture
+    expected = features_for_snapshot(data_dir, manifest["snapshots"]["AAPL"])
+    monkeypatch.chdir(data_dir.parent)
+    assert features_for_snapshot(Path("runtime"), manifest["snapshots"]["AAPL"]) == expected
 
 
 def test_builder_rejects_future_price_mutation(feature_fixture):

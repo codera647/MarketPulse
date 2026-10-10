@@ -47,6 +47,7 @@ def _manifest(row: sqlite3.Row | None) -> dict:
 def _load_snapshot(data_dir: Path, snapshot_hash: str) -> tuple[dict, dict, list, list, list]:
     if len(snapshot_hash) != 64 or any(c not in "0123456789abcdef" for c in snapshot_hash):
         raise ValueError("snapshot ID must be a full lowercase SHA-256 hash")
+    data_dir = data_dir.resolve()
     database = data_dir / "marketpulse.sqlite3"
     if not database.is_file():
         raise ValueError("application database does not exist")
