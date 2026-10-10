@@ -90,6 +90,13 @@ hand-checked symmetric class boundaries, raw-source feature consistency,
 validates code paths, not real
 feed quality, real network access, or financial predictive value.
 
+The initial GitHub commit `8009cbd` also passed the Windows/Python 3.13
+[CI run](https://github.com/codera647/MarketPulse/actions/runs/38035607436):
+dependency installation, lint, and fixture regression tests all succeeded.
+The committed-content scan checked 41 files against locally supplied secret
+values and token/private-key patterns without printing any secret. `.env`,
+`.evn`, `.venv/`, and `data/` were not tracked.
+
 A credential-free audit plan was generated with an ordinary session,
 early-close session, and holiday. It is marked `NOT_RUN` and lists missing
 earnings and correction examples; it is not a live-data verdict.
@@ -128,8 +135,8 @@ access and source audit). User authorization to commit/push at each completed
 milestone is recorded in root `AGENTS.md`. Update this checkpoint and
 `MILESTONES.md`, verify acceptance criteria, scan staged content for secrets,
 push normally, and only then close the matching GitHub milestone. The
-Windows/Python 3.13 GitHub Actions workflow is configured; verify its remote
-result independently rather than assuming it is green.
+Windows/Python 3.13 GitHub Actions workflow passed for the initial commit;
+verify subsequent commits independently rather than assuming they are green.
 
 First run the commands above and inspect the current code/docs without
 changing the agreed six-stock scope. The user has already supplied local

@@ -16,8 +16,8 @@ exposed by the connector; Git pushed the existing local history normally.
 
 | Milestone | Completion evidence | Current local status |
 | --- | --- | --- |
-| [M00](https://github.com/codera647/MarketPulse/milestone/1) Repository and delivery workflow | Private GitHub repository and nine milestones exist; initial push succeeds; CI is configured; committed content credential scan passed for 41 files | Complete; remote closure follows evidence push |
-| [M01](https://github.com/codera647/MarketPulse/milestone/2) Extraction and feature foundation | Trailforge extraction/audit, versioned snapshots, provisional label and pre-open feature previews pass 25 fixture regression tests and lint; code pushed | Complete using fixture evidence; not a live-data certification |
+| [M00](https://github.com/codera647/MarketPulse/milestone/1) Repository and delivery workflow | Private GitHub repository and nine milestones exist; initial push succeeds; CI is configured; committed content credential scan passed for 41 files | Complete; closed on GitHub after evidence push |
+| [M01](https://github.com/codera647/MarketPulse/milestone/2) Extraction and feature foundation | Trailforge extraction/audit, versioned snapshots, provisional label and pre-open feature previews pass 25 fixture regression tests and lint; code pushed | Complete; closed on GitHub using fixture evidence, not live-data certification |
 | M02 Live data access and source audit | Local credentials load; six stocks/SPY return real news/bars; dated coverage and source-convention audit saved | Pending live verification |
 | M03 Complete labeled historical dataset | Reproducible backfill, separate outcomes, explicit label threshold and chronological split manifest, complete rows and gap/leakage report | Pending |
 | M04 Majority and price baselines | Training-only preprocessing, reproducible artifacts and matched chronological validation report | Pending |
@@ -36,5 +36,6 @@ data path; model performance claims require M04/M05 evidence. `.env` and raw
 or derived market data are excluded from all milestone commits.
 
 GitHub Actions uses `.github/workflows/ci.yml` on Windows/Python 3.13.
-Its remote result must be checked separately; configuring CI or pushing code
-does not establish that a remote run passed.
+The initial commit's [CI run](https://github.com/codera647/MarketPulse/actions/runs/38035607436)
+passed dependency installation, lint, and fixture regression tests. Later
+commits need their own checked results; this does not certify live data.
