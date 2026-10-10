@@ -1,0 +1,25 @@
+name: Verify project
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install project and development dependencies
+        run: python -m pip install -e ".[dev]"
+      - name: Lint
+        run: python -m ruff check src tests
+      - name: Run fixture regression tests
+        run: python -m pytest -q

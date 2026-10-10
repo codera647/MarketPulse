@@ -1,0 +1,41 @@
+{
+  "repository": {"name": "MarketPulse", "private": true},
+  "milestones": [
+    {
+      "title": "M00 Repository and delivery workflow",
+      "description": "Create the GitHub repository, delivery milestones, initial source commit and push, CI workflow, and credential exclusions. Close after the remote setup and initial push succeed."
+    },
+    {
+      "title": "M01 Extraction and feature foundation",
+      "description": "Implement Trailforge-supervised extraction and source audit, immutable pre-open snapshots, provisional label preview, and one shared feature builder. Acceptance: fixture regression tests and lint pass; code is pushed. This milestone does not certify live data quality."
+    },
+    {
+      "title": "M02 Live data access and source audit",
+      "description": "Load local .env credentials safely and audit authenticated historical news and bars for AAPL, NVDA, AMZN, JPM, XOM, WMT and SPY. Record feed/convention, schemas, pagination, event/date coverage and point-in-time limitations. Acceptance: dated live audit, gaps and source-use decisions, regression tests, and pushed code."
+    },
+    {
+      "title": "M03 Complete labeled historical dataset",
+      "description": "Build resumable historical ingestion, separate after-close outcomes, an explicit label and split contract, and immutable training rows including healthy no-news sessions. Acceptance: counts by ticker/date, source lineage, missingness and leakage checks, reproducible dataset manifest, and pushed code."
+    },
+    {
+      "title": "M04 Majority and price baselines",
+      "description": "Fit majority and price-only baselines with training-only preprocessing and date partitions shared across tickers. Acceptance: versioned artifacts and manifests, feature parity, chronological validation, real versus fixture provenance, and pushed code."
+    },
+    {
+      "title": "M05 News models and calibrated evaluation",
+      "description": "Train text and combined models, compare matched ablations, calibrate on held-out dates, select policy settings on validation only, and report the untouched final test. Acceptance: metrics/counts/uncertainty, limitations, paper-action eligibility decision, and pushed code."
+    },
+    {
+      "title": "M06 Trailforge decision and paper records",
+      "description": "Build bounded forecast/VERIFY runs, immutable decisions and separate outcomes, deterministic request keys, cross-store reconciliation, paper policy and expiry. Acceptance: duplicate/restart/UNKNOWN/fault evidence, no real-order capability, and pushed code."
+    },
+    {
+      "title": "M07 API and demonstration",
+      "description": "Provide typed forecast/replay/evaluation APIs and a local demonstration with provenance, outcome reveal, success/miss/abstain/blocked cases, readiness and latency. Acceptance: integrated checks, usable walkthrough, and pushed code."
+    },
+    {
+      "title": "M08 Release and handoff",
+      "description": "Freeze dependencies and artifact manifests, complete regression/fault/recovery checks, verify backup/restore, and document fresh setup, limitations and rollback. Acceptance: reproducible release candidate, handoff evidence, and pushed code."
+    }
+  ]
+}

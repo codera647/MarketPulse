@@ -1,0 +1,6 @@
+STOCKS = ("AAPL", "NVDA", "AMZN", "JPM", "XOM", "WMT")
+SYMBOLS = (*STOCKS, "SPY")
+ZONE = "America/New_York"
+NEWS_MAX_PAGES = 20
+BARS_MAX_PAGES = 20
+WEB_MAX_URLS = 3
