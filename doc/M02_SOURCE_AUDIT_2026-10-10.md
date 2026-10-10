@@ -126,3 +126,10 @@ configuration, credential redaction, endpoint/redirect refusal, sanitized
 failures, pagination caps, rolling-window gaps, and relative preview paths.
 `ruff check src tests` passed. Real feature validation passed for six SIP
 snapshots; none of these checks establishes financial predictive value.
+
+Delivery: [code commit `02ac97b`](https://github.com/codera647/MarketPulse/commit/02ac97bcd3f161ff53a8baa3774a11c09fb31686)
+was pushed to `main`. Its [GitHub CI run](https://github.com/codera647/MarketPulse/actions/runs/38037607123)
+passed installation, lint, and regression tests. [M02](https://github.com/codera647/MarketPulse/milestone/3)
+was closed only after verifying that push and CI success. The credential scan
+passed for 22 staged files and 101 local audit/raw/database artifacts; no
+credential value was printed. Later commits require their own CI verification.

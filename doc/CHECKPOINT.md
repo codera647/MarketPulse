@@ -111,6 +111,12 @@ feature builder. Source choices, local report paths/hashes, successful news/bar
 pagination, and the preserved page-cap failure are in
 [M02 evidence](M02_SOURCE_AUDIT_2026-10-10.md). `.env` was not modified or exposed.
 
+M02 code commit [`02ac97b`](https://github.com/codera647/MarketPulse/commit/02ac97bcd3f161ff53a8baa3774a11c09fb31686)
+was pushed, and its [GitHub CI](https://github.com/codera647/MarketPulse/actions/runs/38037607123)
+passed installation, lint, and tests. Remote M02 is closed. The staged secret
+scan checked 22 files, and the local-artifact scan checked 101 files without
+finding credential values. Raw captures and SQLite authorities remain local.
+
 ## Unverified gates and honest limitations
 
 1. **Source access is sampled, not complete dataset/target certification.**
