@@ -3,6 +3,9 @@
 Last checked: 2026-10-10 (Asia/Karachi). This is a handoff record, not a claim
 that the whole product is built or a complete historical dataset is validated.
 M02 now has bounded live IEX/historical SIP access evidence.
+M03 software is now implemented and tested, but the user explicitly holds
+bulk collection/training until data rights are confirmed. Read [DATASET](DATASET.md)
+for the agreed research plan, current code path, and evidence.
 
 ## Project in one minute
 
@@ -16,6 +19,12 @@ days. Using only information available by then, a future model will estimate
 `PAPER_LONG`, `ABSTAIN`, or `BLOCKED`. No real trading, broker orders, model,
 prediction API, or dashboard exists yet. The forecasting target and policy
 threshold are still provisional and require data/evaluation evidence.
+
+Update: the user has approved a fixed 1% research label threshold and
+July–December 2025 training, January–March 2026 validation, April–September
+2026 final-test dates. Paper-action thresholds remain unselected. The new
+outcome convention is an explicit first/last regular-minute proxy, not an
+official-auction or executable-fill claim. See D16–D18 in [DECISION](DECISION.md).
 
 The supplied production-AI thinking framework guides the planning and evidence
 gates; it is not a substitute for the user's instructions. The user explicitly
@@ -58,6 +67,8 @@ actual capabilities.
 | Source audit | Dated ordinary, post-earnings, early-close, holiday and revision-candidate audits passed for IEX and historical SIP. Includes observed schema/types, page traversal, required-21-session gaps, request IDs, and separate verified outcome probes. Reports remain `TECHNICAL_REVIEW_REQUIRED`; see [M02 evidence](M02_SOURCE_AUDIT_2026-10-10.md). |
 | Provisional label preview | `marketpulse label-preview` reads one saved pre-open snapshot and one separate verified outcome job. It validates matching session/feed/adjustment, immutable raw outcome pages and post-close receipt, then computes the symmetric `UP`/`DOWN`/`NO_MATERIAL_MOVE` class under an explicit threshold. It writes nothing and always marks the result not ready for training. See [LABELS](LABELS.md). |
 | Pre-open feature preview | `marketpulse feature-preview` uses one shared `build_features` function on a saved snapshot. It validates raw-version agreement and 21 consecutive prior NYSE sessions, then outputs versioned lagged company/SPY price features and simple headline-count features. No outcome or Agent-Reach capture is an input. It writes nothing and is not a fitted model. See [FEATURES](FEATURES.md). |
+| Separate regular outcomes | `outcomes.py` and `regular-outcome` use a Trailforge fetch/VERIFY Goal for regular-session minute bars. Exact opening/last-minute presence, pagination, OHLCV, source/request, post-close receipt and all seven symbols are required. `session_outcomes` is separate from prediction bars; cached reads verify raw hashes, actual harness receipts and ledger agreement. |
+| Dataset software | `dataset.py`, `dataset-plan` and `dataset-batch`: approval gate before credentials/network, <=31 eligible sessions/batch, frozen contract/calendar/source versions, immutable company-date JSON rows and conflict-rejecting SQLite indexes, no-news rows, completeness/date/ticker/null/gap/lineage/duplicate reports. Synthetic fixture datasets only so far; no real bulk training dataset. |
 
 External packages are pinned by Git commits in `pyproject.toml`:
 Trailforge `v0.1.0a1` at
@@ -74,7 +85,7 @@ An isolated project `.venv` exists. On this checkpoint, these commands passed:
 ```powershell
 cd F:\MarketPulse
 .\.venv\Scripts\python -m pytest -q
-# 51 passed
+# 88 passed in 60.35s
 .\.venv\Scripts\ruff check src tests
 # All checks passed!
 ```
@@ -91,6 +102,14 @@ hand-checked symmetric class boundaries, raw-source feature consistency,
 cover dotenv loading, redaction, endpoint/redirect refusal, sanitized failures,
 pagination caps, audit rolling gaps, and relative read-only preview paths.
 Fixture tests validate code paths, not financial predictive value.
+
+New M03 tests in `test_outcomes.py` and `test_dataset.py` cover exact regular
+boundaries/early closes, malformed minutes and pagination, UNKNOWN/no retry,
+separate outcome storage, approval/date/embargo gates, resumable immutable
+rows, 1% boundary neutrality, healthy no-news, cross-split duplicate detection,
+and missing/corrupt lineage. Bounded calendar computations are cached within
+a process; frozen dataset identities bind the calendar version and split map.
+`pip check` also passed. No new GitHub CI is claimed for unpushed M03 work.
 
 The initial GitHub commit `8009cbd` also passed the Windows/Python 3.13
 [CI run](https://github.com/codera647/MarketPulse/actions/runs/38035607436):
@@ -117,16 +136,26 @@ passed installation, lint, and tests. Remote M02 is closed. The staged secret
 scan checked 22 files, and the local-artifact scan checked 101 files without
 finding credential values. Raw captures and SQLite authorities remain local.
 
+M03 performed only two bounded SIP/split outcome probes, no new news capture:
+2025-11-28 has 210/210 regular minutes for all seven symbols, 2026-10-09 has
+390/390, both with zero gaps. They were saved to `data/m03-probe/` and both
+cached jobs passed updated raw/ledger/harness-receipt checks. The second date
+is outside the final-test period. Details/job IDs are in [DATASET](DATASET.md).
+No source-bearing artifact or credential belongs in a commit.
+
 ## Unverified gates and honest limitations
 
 1. **Source access is sampled, not complete dataset/target certification.**
    Local credentials load safely and both IEX/historical SIP work on the audited
    dates. Paid-plan identity, recent/live SIP rights, monthly coverage, corporate
    actions, rate ceilings, retention/training/sharing rights, and the actual
-   regular-session opening/closing convention remain open. The manifests mark
+   official opening/closing prices remain uncertified. The earlier manifests mark
    daily bars `PROVIDER_DAILY_NOT_CERTIFIED_REGULAR_SESSION`. Do not train
    regular-session labels from them without verifying the convention or an
-   explicitly approved change in target. Article bodies were not requested.
+   explicitly approved change in target. The new minute proxy is separately
+   documented and technically sampled, not certified as official auctions.
+   Article bodies were not requested. On 2026-10-10 the user explicitly said
+   rights are not confirmed and to keep bulk collection gated.
 2. **Historical news is not proven point-in-time.** A current API response may
    not reproduce what an article said at 09:00 on an old date. Keep such replay
    labeled approximate. Do not train/evaluate as if revisions or original
@@ -140,8 +169,10 @@ finding credential values. Raw captures and SQLite authorities remain local.
    second harness run on retry. Idempotent product records do not imply
    exactly-once external calls. Audit/reconciliation and backup/restore still
    need a real fault-injection exercise.
-5. This slice has **no persisted/frozen labels, fitted model, Parquet training table, paper policy,
-   outcome ledger, FastAPI, Streamlit UI, scheduler, or real-order capability**.
+5. This slice has **no complete real labeled dataset, fitted model, paper policy,
+   FastAPI, Streamlit UI, scheduler, or real-order capability**. Separate
+   outcome storage and immutable JSON dataset-row software now exist; only
+   fixtures materialized research rows. M03 remains open.
    Do not describe fixture tests or Trailforge completion as model accuracy or
    production certification.
 
@@ -156,11 +187,20 @@ push normally, and only then close the matching GitHub milestone. The
 Windows/Python 3.13 GitHub Actions workflow passed for the initial commit;
 verify subsequent commits independently rather than assuming they are green.
 
-Read [M02 evidence](M02_SOURCE_AUDIT_2026-10-10.md) first. Before materializing
-training labels, verify the regular-session price convention and account data
-rights. Historical SIP is a preferred candidate, not a silently frozen choice.
-Define the label/threshold/split contract, then audit month-scale coverage and
-build resumable ingestion, separate persisted outcomes, and immutable dataset
-rows with lineage and missingness/leakage reports. Keep healthy no-news rows
-and approximate provenance. Do not inspect a final test while tuning settings.
-Keep Agent-Reach captures out of the model until independently approved.
+Read [DATASET](DATASET.md) and the committed draft contract first. The dates
+and 1% threshold are agreed; `plan_approved` is true, `rights_confirmed` false.
+Do not infer rights confirmation or bypass the hold with low-level backfill.
+The safe `dataset-plan` command reports 1,878 rows across 313 usable dates,
+with a one-session validation/test-boundary embargo. Once the user confirms
+rights with a non-secret account-review reference, create a private approved
+contract and run monthly `dataset-batch` invocations using one data directory.
+Review full coverage, corporate actions, interior gaps, exact duplicate and
+semantic-event leakage, and historical point-in-time limitations. Do not
+inspect final-test labels while tuning. Dataset reports remain research-review
+required until human promotion; M04 training is not implemented. Keep
+Agent-Reach captures outside model inputs. M03 must not be closed/pushed as
+complete without the real dataset and acceptance evidence. Current M03
+software is being committed and pushed as an in-progress checkpoint at the
+user's explicit request on 2026-10-10. This delivery does not complete M03;
+the rights hold remains in force. Verify the remote commit and its own CI
+before claiming GitHub checks passed.

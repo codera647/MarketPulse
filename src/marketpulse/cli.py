@@ -12,9 +12,11 @@ import pandas_market_calendars as mcal
 from marketpulse.alpaca import AlpacaClient
 from marketpulse.audit import AuditCase, run_audit
 from marketpulse.config import load_alpaca_settings
+from marketpulse.dataset import load_contract, run_dataset_batch, split_sessions, validate_contract
 from marketpulse.extraction import ExtractionConfig, ExtractionPipeline
 from marketpulse.features import features_for_snapshot
 from marketpulse.labels import preview_label
+from marketpulse.outcomes import capture_regular_outcome
 
 
 def sessions_between(start: date, end: date) -> list[date]:
@@ -80,7 +82,57 @@ def main(argv: list[str] | None = None) -> int:
     )
     feature.add_argument("--snapshot-hash", required=True)
     feature.add_argument("--data-dir", type=Path, default=Path("data"))
+    plan = commands.add_parser("dataset-plan", help="validate a draft contract without network")
+    plan.add_argument("--contract", required=True, type=Path)
+    dataset = commands.add_parser("dataset-batch", help="approved historical batch, <=31 sessions")
+    dataset.add_argument("--contract", required=True, type=Path)
+    dataset.add_argument("--start", required=True, type=date.fromisoformat)
+    dataset.add_argument("--end", required=True, type=date.fromisoformat)
+    dataset.add_argument("--data-dir", type=Path, default=Path("data/m03"))
+    dataset.add_argument("--env-file", type=Path)
+    outcome = commands.add_parser("regular-outcome", help="one after-close minute-proxy probe")
+    outcome.add_argument("--session", required=True, type=date.fromisoformat)
+    outcome.add_argument("--feed", choices=("iex", "sip"), required=True)
+    outcome.add_argument("--adjustment", choices=("raw", "split", "all"), default="split")
+    outcome.add_argument("--data-dir", type=Path, default=Path("data/m03"))
+    outcome.add_argument("--env-file", type=Path)
     arguments = parser.parse_args(argv)
+
+    if arguments.command in {"dataset-plan", "dataset-batch", "regular-outcome"}:
+        try:
+            contract = None
+            if arguments.command.startswith("dataset-"):
+                contract = load_contract(arguments.contract)
+                if arguments.command == "dataset-plan":
+                    from collections import Counter
+
+                    counts = dict(Counter(split_sessions(contract).values()))
+                    print(json.dumps({
+                        "sessions_by_split": counts,
+                        "expected_rows": sum(counts.values()) * len(contract["symbols"]),
+                        "plan_approved": contract["plan_approved"],
+                        "rights_confirmed": contract["rights_confirmed"],
+                        "network_used": False, "ready_for_training": False,
+                    }, indent=2))
+                    return 0
+                # Refuse an unapproved draft before reading secrets or opening databases.
+                validate_contract(contract, require_approval=True)
+            settings = load_alpaca_settings(arguments.env_file)
+            pipeline = ExtractionPipeline(arguments.data_dir, AlpacaClient(
+                settings.key, settings.secret, base_url=settings.data_url))
+            if arguments.command == "dataset-batch":
+                result = run_dataset_batch(pipeline, contract, arguments.start, arguments.end)
+                print(json.dumps(result, indent=2, sort_keys=True))
+                return 1 if result["batch_failures"] else 0
+            result = capture_regular_outcome(pipeline, arguments.session,
+                                             feed=arguments.feed, adjustment=arguments.adjustment)
+            print(json.dumps(result, indent=2, sort_keys=True))
+            return 0 if result["state"] == "COMPLETE" else 1
+        except Exception as error:
+            print(f"dataset/outcome operation failed: {type(error).__name__}; "
+                  "inspect approvals and local evidence; no secrets or payloads logged",
+                  file=sys.stderr)
+            return 2
 
     if arguments.command == "feature-preview":
         try:

@@ -3,7 +3,9 @@
 Status: proposed modular-monolith design. One repository may run a scheduled worker, FastAPI process, and Streamlit UI; code boundaries do not require separate services.
 
 Current implemented slice: extraction, source audit, and read-only provisional
-label/feature previews. Alpaca is the canonical structured news/bar provider.
+label/feature previews, plus the M03 separate regular-minute outcome ledger
+and gated immutable dataset batches described in [DATASET](DATASET.md).
+Alpaca is the canonical structured news/bar provider.
 Agent-Reach `WebChannel` is an opt-in supplementary internet capture path
 whose output is excluded from market snapshots. Extraction and outcome-source
 audit Goals use Trailforge now; model, policy, API, and UI remain proposed.

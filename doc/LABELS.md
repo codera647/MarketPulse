@@ -1,7 +1,7 @@
 # Provisional label preview
 
 Status on 2026-10-10: implemented and fixture-tested, **not a frozen training
-label contract**. The Stage 1 live source audit remains `NOT_RUN`. This is a
+label contract**. M02 now verifies bounded live source access. This is a
 software slice of Stage 2, not evidence that Alpaca's daily-bar open/close is
 the intended regular-session or executable-price convention.
 
@@ -19,7 +19,12 @@ return is `close / open - 1`. It is `UP` only above `theta`, `DOWN` only below
 `-theta`, and `NO_MATERIAL_MOVE` at both boundaries and between them.
 The preview uses decimal arithmetic, reports the exact threshold and source
 identities, and has a stable hash. There is deliberately no default threshold.
-Choosing and freezing one is still D06 in [DECISION](DECISION.md).
+The research threshold is now recorded as D06 in [DECISION](DECISION.md).
+
+M03 update: the user has approved a fixed 1% research threshold and dated
+splits. The new [dataset pipeline](DATASET.md) uses a separate regular-minute
+proxy, not this daily-bar preview. Data rights and bulk materialization remain
+gated; this command's output is still provisional and is never a training row.
 
 The command does not call a provider, change either database, append an
 outcome, create a training row, or authorize a paper action. Its JSON says

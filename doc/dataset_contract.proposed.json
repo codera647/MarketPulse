@@ -1,0 +1,17 @@
+{
+  "schema": "historical-dataset/1",
+  "symbols": ["AAPL", "NVDA", "AMZN", "JPM", "XOM", "WMT"],
+  "feed": "sip",
+  "adjustment": "split",
+  "threshold": "0.01",
+  "outcome_convention": "regular-minute-proxy/1",
+  "splits": {
+    "train": ["2025-07-01", "2025-12-31"],
+    "validation": ["2026-01-01", "2026-03-31"],
+    "test": ["2026-04-01", "2026-09-30"]
+  },
+  "embargo_sessions": 1,
+  "plan_approved": true,
+  "rights_confirmed": false,
+  "rights_evidence": null
+}

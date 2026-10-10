@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta, timezone
+from functools import lru_cache
 from zoneinfo import ZoneInfo
 
 import pandas_market_calendars as mcal
@@ -33,6 +34,7 @@ class SessionWindow:
     bars_end: datetime
 
 
+@lru_cache(maxsize=2048)
 def session_window(session: date) -> SessionWindow:
     calendar = mcal.get_calendar("NYSE")
     schedule = calendar.schedule(start_date=session - timedelta(days=45), end_date=session)

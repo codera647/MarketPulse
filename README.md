@@ -83,3 +83,19 @@ Run local verification with `python -m pytest` and `ruff check src tests`.
 The [source-audit runbook](doc/SOURCE_AUDIT.md) explains plan and live modes,
 case labels, report contents, and why a successful extraction still requires
 human review before training claims.
+
+## M03 dataset work
+
+The [dataset runbook](doc/DATASET.md) describes the resumable historical batch
+pipeline, separate verified regular-minute outcome ledger, immutable rows and
+lineage/gap/leakage reports. A fixed 1% threshold and chronological dates are
+agreed. Data rights are **not yet confirmed**, so bulk collection and training
+remain disabled; no complete real training dataset or model exists.
+
+```powershell
+.\.venv\Scripts\marketpulse dataset-plan --contract doc/dataset_contract.proposed.json
+```
+
+This prints the proposed 1,878-row plan without network access or credentials.
+`dataset-batch` refuses the committed contract until a human records rights
+confirmation in a private approved copy. Do not bypass that hold with backfill.

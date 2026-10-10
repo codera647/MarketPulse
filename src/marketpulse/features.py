@@ -8,6 +8,7 @@ import sqlite3
 import statistics
 from contextlib import closing
 from datetime import date, timedelta
+from functools import lru_cache
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -179,13 +180,14 @@ def _verify_raw_versions(
             raise ValueError("normalized article disagrees with immutable raw version")
 
 
-def _expected_prior_dates(session: date) -> list[date]:
+@lru_cache(maxsize=2048)
+def _expected_prior_dates(session: date) -> tuple[date, ...]:
     dates = [item.date() for item in mcal.get_calendar("NYSE").valid_days(
         start_date=session - timedelta(days=60), end_date=session - timedelta(days=1)
     )]
     if len(dates) < 21:
         raise ValueError("calendar has fewer than 21 prior exchange sessions")
-    return dates[-21:]
+    return tuple(dates[-21:])
 
 
 def _price_features(rows: list[dict], symbol: str, source: dict, session: date) -> dict:

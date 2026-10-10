@@ -133,6 +133,19 @@ CREATE TABLE IF NOT EXISTS snapshots (
 );
 CREATE INDEX IF NOT EXISTS ix_bars_symbol_time ON price_bars(symbol, bar_time);
 CREATE INDEX IF NOT EXISTS ix_snapshots_session_symbol ON snapshots(session, symbol);
+CREATE TABLE IF NOT EXISTS session_outcomes (
+  outcome_hash TEXT PRIMARY KEY,
+  job_key TEXT NOT NULL UNIQUE,
+  manifest_json TEXT NOT NULL,
+  FOREIGN KEY(job_key) REFERENCES extraction_jobs(job_key)
+);
+CREATE TABLE IF NOT EXISTS dataset_rows (
+  row_hash TEXT PRIMARY KEY,
+  contract_hash TEXT NOT NULL,
+  session TEXT NOT NULL,
+  symbol TEXT NOT NULL,
+  UNIQUE(contract_hash, session, symbol)
+);
 """
 
 
@@ -255,3 +268,33 @@ class ExtractionStore:
                 "UPDATE extraction_jobs SET status='COMPLETE', manifest_json=? WHERE job_key=?",
                 (json.dumps(manifest, sort_keys=True), key),
             )
+
+    def commit_outcome(self, key: str, manifest: dict, pages: list[dict]) -> None:
+        """Atomically append verified outcomes; never write prediction price tables."""
+        with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            for page in pages:
+                db.execute(
+                    "INSERT OR IGNORE INTO source_pages VALUES (?,?,?,?,?)",
+                    (page["digest"], key, page["source"],
+                     page["received_at"], page["request_id"]),
+                )
+            encoded = json.dumps(manifest, sort_keys=True)
+            db.execute("INSERT INTO session_outcomes VALUES (?,?,?)",
+                       (digest(manifest), key, encoded))
+            db.execute(
+                "UPDATE extraction_jobs SET status='COMPLETE', manifest_json=? WHERE job_key=?",
+                (encoded, key),
+            )
+
+    def append_dataset_row(self, row_hash: str, contract_hash: str, row: dict) -> None:
+        with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            existing = db.execute(
+                "SELECT row_hash FROM dataset_rows WHERE contract_hash=? AND session=? "
+                "AND symbol=?", (contract_hash, row["session"], row["symbol"]),
+            ).fetchone()
+            if existing and existing["row_hash"] != row_hash:
+                raise ValueError("dataset row conflict: create a new contract, never overwrite")
+            db.execute("INSERT OR IGNORE INTO dataset_rows VALUES (?,?,?,?)",
+                       (row_hash, contract_hash, row["session"], row["symbol"]))

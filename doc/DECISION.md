@@ -9,7 +9,7 @@ Status terms: **agreed** by the user; **provisional** design default; **open** n
 | D03 | One 09:00 New York decision, regular open-to-close target | Provisional | Coherent with paper open-entry; no signal study yet | Feasibility shows unavailable data or uninformative target |
 | D04 | News window from prior regular close through cutoff | Provisional | Captures after-hours/pre-open events; train/validation ablation needed | Insufficient eligible events or leakage issue |
 | D05 | Benzinga news through Alpaca; Alpaca price bars | Provisional; live samples audited | M02 verifies IEX and historical SIP on four sessions; rights, monthly coverage and regular-session convention remain open | Coverage, rights, versioning, or feed quality fail |
-| D06 | `UP/DOWN/NO_MATERIAL_MOVE` symmetric threshold | Open | Choose and freeze through training/validation plan | Label imbalance or cost interpretation |
+| D06 | Fixed symmetric 1% research threshold; exact boundaries neutral | Agreed on 2026-10-10 | User accepted the first research plan before bulk labels; see DATASET | New experiment only, never tune against final test |
 | D07 | Confidence-based `PAPER_LONG`, otherwise abstain/block | Provisional | Requires calibration and validation threshold | Calibration/coverage evidence insufficient |
 | D08 | Use Trailforge neutral Harness v0.1.0a1 for bounded prediction/replay runs | Provisional | PDF and pinned release support Goal/Task checks; integration spike pending | Latency or host-bridge cost outweighs recovery value |
 | D09 | Modular monolith, local SQLite plus immutable dataset artifacts | Provisional | One-user demo, small universe, simple recovery | Concurrent/load or restore tests reveal limitation |
@@ -19,6 +19,9 @@ Status terms: **agreed** by the user; **provisional** design default; **open** n
 | D13 | Agent-Reach as supplementary internet-access layer, not a historical price source | Agreed for extraction; usage boundary implemented | User requested Agent-Reach; its documented WebChannel is integrated behind explicit URL opt-in | A suitable licensed point-in-time web source is approved for model input |
 | D14 | Trailforge neutral Harness supervises extraction jobs | Implemented and exercised on live M02 samples | Typed VERIFY, bounded artifacts, separate SQLite authority and separate outcome probes; recovery guarantees still unverified | Real provider latency, account access, or recovery audit changes scope |
 | D15 | Prefer historical SIP for M03 price research; never merge it with IEX | Provisional technical recommendation | Both sampled feeds work, but 27/28 matched outcome pairs differ in open or close; not evidence of live SIP access or official auction fills | Monthly coverage, rights, or regular-session convention fail |
+| D16 | July–December 2025 train, January–March 2026 validation, April–September 2026 final test | Agreed on 2026-10-10 | User accepted the dates; one-session boundary embargo is the implementation default | New experiment required for changed boundaries |
+| D17 | Keep bulk collection and training gated until account rights confirmation | Explicit user instruction on 2026-10-10 | User said rights are not confirmed; build fixtures and bounded verification only | Recorded rights review and confirmation |
+| D18 | First regular minute open / last regular minute close as explicit price proxy | Implemented research convention; not auction certification | Two bounded SIP probes pass; source semantics and limitations in DATASET | Missing boundary bars or target feasibility failure |
 
 ## ADR-01: one provider pair first
 

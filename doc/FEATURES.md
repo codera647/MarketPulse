@@ -2,7 +2,9 @@
 
 Status on 2026-10-10: the shared numerical feature function and read-only CLI
 are fixture-tested. This is **not** a fitted model, training export, or
-empirical signal. Live source access and the label/test contract remain gated.
+empirical signal. M02 verifies bounded live source access; the user has now
+approved the M03 threshold/date plan. Bulk creation and training remain gated
+on data rights and dataset review; see [DATASET](DATASET.md).
 
 ## Input and boundary
 
@@ -40,12 +42,11 @@ The result contains ordered feature names, values, a schema version and
 content hash, cutoff, source feed/adjustment, provenance tier, and prior bar
 dates. `build_features` is the single pure function intended for offline
 training, replay, and later scoring; the CLI calls it after read-only
-hydration. No feature rows are persisted yet.
+hydration. The M03 pipeline can persist these values inside immutable research
+rows after approval; no real bulk dataset has been materialized yet.
 
 ## Next gate
 
-Run the live [source audit](SOURCE_AUDIT.md), validate the regular-session
-target and rights, choose a threshold/split protocol, and only then export
-training examples. The next software slice can build training/validation
-splits and majority/price-only baselines against explicitly labeled fixtures,
-without claiming real predictive performance.
+Complete the rights/coverage/event reviews in [DATASET](DATASET.md), collect
+the approved chronological dataset, and promote it before M04 baselines.
+Historical news remains approximate even with a passing feature check.
