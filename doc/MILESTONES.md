@@ -1,18 +1,23 @@
 # GitHub delivery milestones
 
 Requested on 2026-10-10: create the project repository on the user's GitHub
-and commit/push the code at each completed milestone. The planned repository
-name is `MarketPulse`, with private visibility by default. GitHub creation
-and the initial push are pending access to callable connector tools.
+and commit/push the code at each completed milestone. The private repository
+is [codera647/MarketPulse](https://github.com/codera647/MarketPulse), with
+`main` tracking `origin/main`. The initial source commit
+[`8009cbd`](https://github.com/codera647/MarketPulse/commit/8009cbd9bdb8196d329b1213051c15addd793d5f)
+was pushed successfully on 2026-10-10.
 
-The definitions in [github_milestones.json](github_milestones.json) are ready
-to create on GitHub. No due dates are invented. Local implementation evidence
-does not substitute for an actual remote milestone or successful push.
+All nine definitions in [github_milestones.json](github_milestones.json) were
+created as [GitHub milestones](https://github.com/codera647/MarketPulse/milestones).
+No due dates are invented. The connector verified the authenticated account
+and repository permissions. Repository/milestone creation used GitHub's API
+with existing local Git authentication because those operations are not
+exposed by the connector; Git pushed the existing local history normally.
 
 | Milestone | Completion evidence | Current local status |
 | --- | --- | --- |
-| M00 Repository and delivery workflow | GitHub repository and milestones exist; initial push succeeds; CI is configured; credentials excluded | Prepared; remote access pending |
-| M01 Extraction and feature foundation | Trailforge extraction/audit, versioned snapshots, provisional label and pre-open feature previews pass fixture regression tests | Implemented; 25 fixture tests previously passed; initial push pending |
+| [M00](https://github.com/codera647/MarketPulse/milestone/1) Repository and delivery workflow | Private GitHub repository and nine milestones exist; initial push succeeds; CI is configured; committed content credential scan passed for 41 files | Complete; remote closure follows evidence push |
+| [M01](https://github.com/codera647/MarketPulse/milestone/2) Extraction and feature foundation | Trailforge extraction/audit, versioned snapshots, provisional label and pre-open feature previews pass 25 fixture regression tests and lint; code pushed | Complete using fixture evidence; not a live-data certification |
 | M02 Live data access and source audit | Local credentials load; six stocks/SPY return real news/bars; dated coverage and source-convention audit saved | Pending live verification |
 | M03 Complete labeled historical dataset | Reproducible backfill, separate outcomes, explicit label threshold and chronological split manifest, complete rows and gap/leakage report | Pending |
 | M04 Majority and price baselines | Training-only preprocessing, reproducible artifacts and matched chronological validation report | Pending |
@@ -29,3 +34,7 @@ milestone, close it only when its acceptance criteria are met.
 M01 establishes software behavior using fixtures. M02/M03 establish the real
 data path; model performance claims require M04/M05 evidence. `.env` and raw
 or derived market data are excluded from all milestone commits.
+
+GitHub Actions uses `.github/workflows/ci.yml` on Windows/Python 3.13.
+Its remote result must be checked separately; configuring CI or pushing code
+does not establish that a remote run passed.

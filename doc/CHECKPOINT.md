@@ -28,8 +28,13 @@ actual capabilities.
 - Project root is **`F:\MarketPulse`**. The environment supplied
   `F:\US_Stock_Prediction` as a cwd, but that path was checked and does not
   exist. Do not silently start a second project there or move existing files.
-- This directory is now a local Git repository on `main`. The initial remote
-  repository, milestones, and push are pending callable GitHub connector tools.
+- This directory is a Git repository on `main`, tracking `origin/main` at
+  [codera647/MarketPulse](https://github.com/codera647/MarketPulse), a private
+  repository. The initial source commit `8009cbd` was pushed on 2026-10-10.
+  All nine GitHub milestones exist; M00/M01 cover repository setup and the
+  fixture-tested foundation, not live data or trained models. The connector
+  verified account/repository access; creation used the GitHub API with
+  existing local Git authentication because the connector lacks those tools.
   The local `.env`, `.evn`, `.venv/`, generated `*.egg-info/`, and `data/` are
   ignored by `.gitignore`. See [MILESTONES](MILESTONES.md) for the delivery plan.
 - Read [PRD](PRD.md), [DESIGN](DESIGN.md), [ARCHITECTURE](ARCHITECTURE.md),
@@ -118,14 +123,18 @@ earnings and correction examples; it is not a live-data verdict.
 
 ## Recommended next agent action
 
-First finish M00: use the user's GitHub connector to create a private
-`MarketPulse` repository and the milestones in `github_milestones.json`, push
-the local source commit, and verify the remote. User authorization to push
-at each completed milestone is recorded in root `AGENTS.md`.
+GitHub setup and the initial push are complete. Continue with M02 (live data
+access and source audit). User authorization to commit/push at each completed
+milestone is recorded in root `AGENTS.md`. Update this checkpoint and
+`MILESTONES.md`, verify acceptance criteria, scan staged content for secrets,
+push normally, and only then close the matching GitHub milestone. The
+Windows/Python 3.13 GitHub Actions workflow is configured; verify its remote
+result independently rather than assuming it is green.
 
 First run the commands above and inspect the current code/docs without
-changing the agreed six-stock scope. Then, after the user configures Alpaca
-credentials locally, use [SOURCE_AUDIT](SOURCE_AUDIT.md) to run the Stage 1
+changing the agreed six-stock scope. The user has already supplied local
+Alpaca credentials in `.env`; safely load them without exposing values, then
+use [SOURCE_AUDIT](SOURCE_AUDIT.md) to run the Stage 1
 live source audit. Select independently verified earnings and corrected-story
 dates; sample ordinary, holiday/early-close, and those event sessions for all
 six stocks and SPY. Confirm response schemas, page traversal, missingness,
