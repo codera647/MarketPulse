@@ -1,11 +1,28 @@
 # MarketPulse checkpoint for the next agent
 
-Last checked: 2026-10-10 (Asia/Karachi). This is a handoff record, not a claim
+Last checked: 2026-10-11 (Asia/Karachi). This is a handoff record, not a claim
 that the whole product is built or a complete historical dataset is validated.
 M02 now has bounded live IEX/historical SIP access evidence.
 M03 software is now implemented and tested, but the user explicitly holds
 bulk collection/training until data rights are confirmed. Read [DATASET](DATASET.md)
 for the agreed research plan, current code path, and evidence.
+M04 baseline software and the connected collection-to-training workflow are
+implemented locally; see [BASELINES](BASELINES.md) and [PIPELINE](PIPELINE.md).
+This includes human dataset promotion and a reviewed real-data loader, but no
+real dataset/model run. It does not clear the M03 rights hold or establish
+market-model performance. User screenshots confirm the Basic plan; see
+[PERMISSIONS](PERMISSIONS.md) for positive ML documentation and remaining terms.
+
+LATEST: the local **synthetic full demo** now includes four-model comparison,
+separate calibration/policy date segments, Trailforge verification, immutable
+forecast decisions, explicit outcome reveal, FastAPI, Streamlit and credential-
+free fixture backup/restore. See [DEMO](DEMO.md) and [RELEASE](RELEASE.md).
+The user requested autonomous project completion on 2026-10-11; this did not
+change the earlier explicit rights hold. No real bulk dataset/model was built.
+The fixture comparator/service deliberately reject real research tiers. A
+complete real-data news training/serving extension is still remaining work.
+Historical statements below describe their original implementation stage;
+the latest verification/delivery section at the end takes precedence.
 
 ## Project in one minute
 
@@ -16,8 +33,9 @@ The proposed daily decision time is **09:00 America/New_York** on NYSE trading
 days. Using only information available by then, a future model will estimate
 `UP`, `DOWN`, or `NO_MATERIAL_MOVE` for that day's regular-session
 **open-to-close** return. A separate deterministic policy may eventually say
-`PAPER_LONG`, `ABSTAIN`, or `BLOCKED`. No real trading, broker orders, model,
-prediction API, or dashboard exists yet. The forecasting target and policy
+`PAPER_LONG`, `ABSTAIN`, or `BLOCKED`. No real trading, broker orders or fitted
+market model exists. A fixture-only prediction API and dashboard now exist.
+The forecasting target and market policy
 threshold are still provisional and require data/evaluation evidence.
 
 Update: the user has approved a fixed 1% research label threshold and
@@ -69,6 +87,7 @@ actual capabilities.
 | Pre-open feature preview | `marketpulse feature-preview` uses one shared `build_features` function on a saved snapshot. It validates raw-version agreement and 21 consecutive prior NYSE sessions, then outputs versioned lagged company/SPY price features and simple headline-count features. No outcome or Agent-Reach capture is an input. It writes nothing and is not a fitted model. See [FEATURES](FEATURES.md). |
 | Separate regular outcomes | `outcomes.py` and `regular-outcome` use a Trailforge fetch/VERIFY Goal for regular-session minute bars. Exact opening/last-minute presence, pagination, OHLCV, source/request, post-close receipt and all seven symbols are required. `session_outcomes` is separate from prediction bars; cached reads verify raw hashes, actual harness receipts and ledger agreement. |
 | Dataset software | `dataset.py`, `dataset-plan` and `dataset-batch`: approval gate before credentials/network, <=31 eligible sessions/batch, frozen contract/calendar/source versions, immutable company-date JSON rows and conflict-rejecting SQLite indexes, no-news rows, completeness/date/ticker/null/gap/lineage/duplicate reports. Synthetic fixture datasets only so far; no real bulk training dataset. |
+| Baseline software | `baselines.py`, `baseline_fixtures.py`, `baseline-demo`: synthetic majority/price checks; separate `research.py` and `baseline-train` require explicit promoted real data. Shared train-only median/scaling, safe JSON scoring and validation, sealed test artifacts, Trailforge fit/evaluate/VERIFY. No fitted market model, calibration or paper-action authority. |
 
 External packages are pinned by Git commits in `pyproject.toml`:
 Trailforge `v0.1.0a1` at
@@ -76,16 +95,20 @@ Trailforge `v0.1.0a1` at
 `94f06c1969dfc1834001269d79d3ad0972d9dee6`. Transitive packages have
 version ranges, not a fully locked deployment file.
 The interrupted baseline setup added and installed `scikit-learn==1.9.1`;
-there is still no training implementation or fitted model.
+M04 uses it for fixture fitting and the new promoted real-data baseline path.
+The latter has only synthetic wire-test evidence; no fitted market model exists.
+The new `requirements.lock.txt` snapshots the tested Python 3.13 fixture-demo
+environment, with exact FastAPI/Streamlit/uvicorn versions and pinned Git inputs.
 
 ## Verification performed
 
-An isolated project `.venv` exists. On this checkpoint, these commands passed:
+An isolated project `.venv` exists. Before the connected pipeline update,
+these commands passed (latest result is in the update at the end):
 
 ```powershell
 cd F:\MarketPulse
 .\.venv\Scripts\python -m pytest -q
-# 88 passed in 60.35s
+# 118 passed in 103.17s
 .\.venv\Scripts\ruff check src tests
 # All checks passed!
 ```
@@ -110,6 +133,23 @@ rows, 1% boundary neutrality, healthy no-news, cross-split duplicate detection,
 and missing/corrupt lineage. Bounded calendar computations are cached within
 a process; frozen dataset identities bind the calendar version and split map.
 `pip check` also passed. No new GitHub CI is claimed for unpushed M03 work.
+
+Latest update: M03 was pushed at user request as commit
+[`546f8d3`](https://github.com/codera647/MarketPulse/commit/546f8d3bb726391047f834460bc7247c1800d7eb),
+with remote `main` matching and a clean worktree at that point. Its staged
+scan checked 17 files with no secrets or forbidden tracked artifacts. M03 was
+not closed. No verification of that commit's GitHub CI is claimed here.
+Current M04 and connected pipeline work is local and has not been committed/pushed.
+
+The 30 new `test_baselines.py` tests cover training-only preprocessing,
+JSON/sklearn scoring parity, named class distributions and hand-calculated
+majority metrics, train/validation exclusion, final-test read refusal,
+chronological complete date groups, fixture/real separation, malformed
+features/models, missing classes, altered-candidate failure, UNKNOWN/no retry,
+idempotence and credential-free CLI execution. A local seed-42 demo completed
+through Trailforge with 84 training and 24 validation examples; its 24 test
+artifacts were not read by fitting/evaluation/verification. Synthetic price/
+label relationships are manufactured; never call their scores market accuracy.
 
 The initial GitHub commit `8009cbd` also passed the Windows/Python 3.13
 [CI run](https://github.com/codera647/MarketPulse/actions/runs/38035607436):
@@ -147,7 +187,8 @@ No source-bearing artifact or credential belongs in a commit.
 
 1. **Source access is sampled, not complete dataset/target certification.**
    Local credentials load safely and both IEX/historical SIP work on the audited
-   dates. Paid-plan identity, recent/live SIP rights, monthly coverage, corporate
+   dates. Basic-plan identity is now confirmed by the user's screenshot;
+   subscriber classification, recent/live SIP rights, monthly coverage, corporate
    actions, rate ceilings, retention/training/sharing rights, and the actual
    official opening/closing prices remain uncertified. The earlier manifests mark
    daily bars `PROVIDER_DAILY_NOT_CERTIFIED_REGULAR_SESSION`. Do not train
@@ -169,10 +210,11 @@ No source-bearing artifact or credential belongs in a commit.
    second harness run on retry. Idempotent product records do not imply
    exactly-once external calls. Audit/reconciliation and backup/restore still
    need a real fault-injection exercise.
-5. This slice has **no complete real labeled dataset, fitted model, paper policy,
+5. This slice has **no complete real labeled dataset, fitted market model, paper policy,
    FastAPI, Streamlit UI, scheduler, or real-order capability**. Separate
    outcome storage and immutable JSON dataset-row software now exist; only
-   fixtures materialized research rows. M03 remains open.
+   fixtures materialized research rows. Fitted fixture baselines now exist,
+   but cannot score real input tiers or authorize paper action. M03/M04 remain open.
    Do not describe fixture tests or Trailforge completion as model accuracy or
    production certification.
 
@@ -197,10 +239,89 @@ contract and run monthly `dataset-batch` invocations using one data directory.
 Review full coverage, corporate actions, interior gaps, exact duplicate and
 semantic-event leakage, and historical point-in-time limitations. Do not
 inspect final-test labels while tuning. Dataset reports remain research-review
-required until human promotion; M04 training is not implemented. Keep
+required until human promotion. M04 fitting/scoring, report-bound human
+promotion and the reviewed-data loader are implemented. Use the commands in
+[PIPELINE](PIPELINE.md); collection resumes from verified missing dates and
+training/validation/verification cannot open final-test row artifacts. Keep
 Agent-Reach captures outside model inputs. M03 must not be closed/pushed as
-complete without the real dataset and acceptance evidence. Current M03
-software is being committed and pushed as an in-progress checkpoint at the
-user's explicit request on 2026-10-10. This delivery does not complete M03;
-the rights hold remains in force. Verify the remote commit and its own CI
-before claiming GitHub checks passed.
+complete without the real dataset and acceptance evidence. Its in-progress
+software checkpoint was pushed at the user's explicit request on 2026-10-10;
+the rights hold remains in force. The next safe command is `baseline-demo`,
+which generates its own synthetic inputs with no `.env` or network access.
+Continue only synthetic/software work until the user confirms rights; then
+complete M03 before real M04 validation. Current M04 changes are local; neither
+M03 nor M04 is complete. Verify each pushed commit's own CI before claiming
+GitHub checks passed.
+
+## Connected pipeline implementation update
+
+New `research.py` and CLI commands: `pipeline-plan`, `pipeline-collect`,
+`dataset-inspect`, `dataset-promote`, `baseline-train`. Collection uses bounded
+20-session/default-one-batch runs (explicit maximum 50 batches), honors the
+existing rights gate before credentials, stops held/failed work, and never
+automatically trains. Human review records bind exact current contract/report
+hashes with corporate-action, semantic-event, outcome-gap and approximate-
+history evidence. The committed review template is deliberately unapproved.
+
+Baseline training shares the fixture implementation without changing data
+tiers. Real-path loading rechecks train/validation raw features, separate
+outcome/input harness receipts and the complete promoted row index. Final-test
+row/outcome artifacts remain unopened by training, validation, verification
+and cached-run reuse. Safe JSON parameters and uncalibrated research outputs
+never authorize paper or real trading.
+
+The credential-free plan ran successfully: 16 bounded chunks covering the
+agreed 313 sessions / 1,878 rows. Initial targeted baseline/research tests passed
+51 cases in 189.27 seconds. The final full suite passed **139 tests in 299.01
+seconds**, including the tightened input-receipt revalidation. Ruff and
+dependency checks pass. The changed-file credential scan checked 17 files
+and found zero hits; no forbidden provider/credential artifacts are tracked.
+No real bulk collection,
+real-data fitted model, support submission, account change or gate removal
+occurred. M03/M04 remain empirically open, so no completion push/closure is due.
+
+## Full synthetic application update — 2026-10-11
+
+Implemented `modeling.py`, `demo.py`, `service.py`, `api.py`, `ui.py` and
+`backup.py`; commands are in [DEMO](DEMO.md). The private demo is in `data/demo`,
+isolated from provider data. Default release has 84 training, 12 calibration,
+12 policy and 24 test rows from synthetic 2024 dates. Only after fit/calibration/
+policy freeze are synthetic final-test rows opened. Text uses train-only
+TF-IDF; all four models save safe JSON parameters with calibrated probabilities.
+Fixture policies never authorize broker actions or establish market quality.
+
+The default synthetic release is
+`e67ff500133855356c86d310484af0d9e6ecac6d9ad81d3dbf356d7dd11e1bb4`.
+Its build run is `f5aafc91-5069-4614-b8b7-e4af034b3986`. These are local artifact/
+harness identities, not provider or account secrets. Forecast adapters load
+input-only stores. Immutable decisions resolve original model/policy/input
+hashes and typed verification receipts; reveal uses a separate outcome store.
+
+Requests are idempotent, accepted positions are transactionally bounded and
+known verified runs can repair missing product records after a crash. Unknown
+tasks stay held. The start/run-ID cross-store window remains possible. Backup
+requires other processes quiesced; restore refuses existing destinations and
+checks file hashes, database integrity and saved decision/outcome identities.
+
+FastAPI and Streamlit launch on loopback only, no credentials required. The
+dashboard exposes replay, audit, explicit reveal, matched fixture evaluation,
+operations and failure fixtures. Initial test run passed 27 new cases and caught
+a decimal-string outcome formatting error in the UI; this was fixed before
+final regression. Final full suite: **170 passed in 203.79s**, one upstream
+Starlette/httpx deprecation warning (not suppressed). Ruff and pip check pass.
+The dashboard interaction was verified headlessly with Streamlit AppTest;
+no browser visual inspection is claimed. Live local `/health/ready` returns
+FIXTURE-ready and Streamlit `/_stcore/health` returns HTTP 200 `ok`.
+
+Background services were started hidden on the user's machine: API PID 16300,
+dashboard launcher PID 14716 (Streamlit has a child process). URLs:
+http://127.0.0.1:8000/docs and http://127.0.0.1:8501. Logs are ignored under
+`data/demo-*.log`. Do not kill unrelated processes if ports later change owner.
+No provider collection, real training, account changes or order submission ran.
+Git delivery evidence is recorded after final source/credential inspection.
+The staged source/docs scan checked **31 paths with zero findings**; `.env`,
+`.evn`, data, databases, model artifacts and logs were not staged. Additional
+tests prove full-demo repeated runs reuse their release/run and healthy empty
+news/unknown tokens do not expand training vocabulary. M07's local synthetic
+API/demo acceptance is satisfied; other empirical/forward-release criteria
+remain explicitly open. Do not infer real model completion from this delivery.

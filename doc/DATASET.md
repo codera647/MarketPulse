@@ -5,6 +5,11 @@ training remain gated. The user approved the research dates and fixed 1%
 threshold, and explicitly asked to keep bulk collection gated because data
 rights have not been confirmed. M03 is not complete and must not be closed.
 
+[PIPELINE](PIPELINE.md) now connects bounded multi-batch collection/resume,
+offline report regeneration, exact report-bound human promotion and real-data
+baseline software. The default contract remains held; complete collection
+never automatically promotes or trains.
+
 ## Agreed research plan
 
 Six targets: AAPL, NVDA, AMZN, JPM, XOM and WMT. SPY is context only. Predict

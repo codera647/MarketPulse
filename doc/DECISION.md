@@ -22,6 +22,8 @@ Status terms: **agreed** by the user; **provisional** design default; **open** n
 | D16 | July–December 2025 train, January–March 2026 validation, April–September 2026 final test | Agreed on 2026-10-10 | User accepted the dates; one-session boundary embargo is the implementation default | New experiment required for changed boundaries |
 | D17 | Keep bulk collection and training gated until account rights confirmation | Explicit user instruction on 2026-10-10 | User said rights are not confirmed; build fixtures and bounded verification only | Recorded rights review and confirmation |
 | D18 | First regular minute open / last regular minute close as explicit price proxy | Implemented research convention; not auction certification | Two bounded SIP probes pass; source semantics and limitations in DATASET | Missing boundary bars or target feasibility failure |
+| D19 | Basic is the active Alpaca plan; documented private ML use cases are positive evidence, not complete retention clearance | Screenshot-confirmed plan / remaining terms unresolved | PERMISSIONS records the user's screenshots and official ML/news documentation; no paid upgrade performed | Account-applicable rights clarification |
+| D20 | Build connected collection/review/training software without fabricating gate approval | Implemented at user request | PIPELINE adds bounded resume, report-bound human promotion and train/validation-only loader; synthetic tests only | Rights and real dataset review allow empirical M03/M04 work |
 
 ## ADR-01: one provider pair first
 
@@ -49,6 +51,17 @@ Question: where does predictive uncertainty become an action? Options: model ret
 ## ADR-05: storage and deployment
 
 Question: which storage/topology is justified? Options: local SQLite/Parquet modular monolith; PostgreSQL and separate services; cloud data lake. Provisional selection: local SQLite records and immutable file artifacts, with Trailforge's separate SQLite. This fits a one-user demo but needs a bridge and restore test. Move to PostgreSQL only for measured multi-user/concurrent needs; Trailforge v0.1.0a1's optional PostgreSQL adapter is for its legacy Review path, not the neutral Harness.
+
+## D21 — Synthetic application delivery, not rights clearance (2026-10-11)
+
+The user requested autonomous completion while away. Continue normal local
+implementation but preserve their explicit earlier rights hold. Build a
+credential-free fixture application rather than assert unobserved market
+accuracy. Its synthetic news comparator, calibration, policy and replay service
+accept FIXTURE only, never real/recorded tiers. The real dataset promotion's
+purpose remains majority/price validation; no implicit news/test/action approval
+is added. Model/cost/outcome evidence must retain its synthetic provenance.
+See [DEMO](DEMO.md) and [RELEASE](RELEASE.md) for implementation and limitations.
 
 ## Pending decision protocol
 

@@ -35,6 +35,24 @@ Before downloading or displaying provider material, verify terms for local resea
 
 Set a local retention period after rights review; until then, avoid public export and keep raw caches private. Deletion must remove both source-bearing artifacts and their indexes while preserving a non-sensitive tombstone/lineage note where permitted. Financial/legal requirements for a commercial pilot need qualified review; this demo plan does not decide them.
 
+## Fixture service boundary and delivery checks
+
+The implemented API/dashboard commands bind loopback only. The HTTP API rejects
+non-loopback peers, unexpected hosts and request bodies larger than 16 KiB;
+input symbols/faults are typed literals, no caller-supplied URLs or file paths.
+This does not establish public-service authentication: do not proxy it publicly.
+The UI displays headlines as literal text and does not execute provider content.
+Fixture models, policies and outcomes cannot promote real research artifacts or
+authorize broker orders. Keep private data stores and backup destinations outside
+Git; quiesce writers for backup and preserve originals during restore.
+
+Before each delivery, stage only intended source/docs and run
+`python scripts/check_staged_secrets.py`. The scanner checks forbidden data/
+credential paths, exact locally configured credential values and common secret
+signatures without printing them. It is a safeguard, not a proof that every
+possible secret or sensitive dataset can be recognized. `.env.example` remains
+an empty template; `.env`/`.evn` and real artifact stores must never be staged.
+
 ## Incident and rollback
 
 If a credential leaks, revoke/rotate it, stop ingestion, inspect access, and document affected exports. If a source version, feature cutoff or label bug is found, mark affected evaluations invalid, disable paper-action mode, preserve the original evidence, and retrain/re-evaluate with a new manifest. If a Trailforge authority store is corrupted, stop admission, restore a known consistent copy and reconcile product decisions; never reset the store to regain declared-unit allowance.

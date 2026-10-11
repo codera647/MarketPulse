@@ -1,0 +1,14 @@
+{
+  "schema": "dataset-review/1",
+  "contract_hash": null,
+  "report_hash": null,
+  "reviewer": null,
+  "reviewed_at_utc": null,
+  "approved": false,
+  "checks": {
+    "corporate_actions": null,
+    "semantic_events": null,
+    "outcome_gaps": null,
+    "historical_approximation": null
+  }
+}

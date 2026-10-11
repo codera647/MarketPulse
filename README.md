@@ -1,9 +1,14 @@
 # MarketPulse
 
-This repository currently implements **data extraction, source audit, and
-read-only label/feature previews** for AAPL, NVDA, AMZN, JPM, XOM, WMT, and
-benchmark SPY. It does not train a model, produce predictions, or place
-trades. Live IEX and historical SIP access have been sampled under Trailforge;
+This repository implements **data extraction, source audit, gated collection,
+explicit dataset review and baseline training software**, plus a runnable
+**synthetic local replay demo** with four models, calibration, Trailforge-backed
+decisions, FastAPI, Streamlit and recovery tools. The scope remains
+AAPL, NVDA, AMZN, JPM, XOM, WMT, and benchmark SPY.
+It can fit and replay fixture models, but has no trained
+market model or trading capability. Reviewed real-data fitting is implemented
+but has not been run. Live IEX and historical SIP access have
+been sampled under Trailforge;
 see the [M02 audit](doc/M02_SOURCE_AUDIT_2026-10-10.md) for coverage and open
 data-rights and label-convention gates. The product plan is in [`doc/`](doc/README.md).
 The [delivery milestones](doc/MILESTONES.md) track completed stages and
@@ -14,6 +19,23 @@ It also provides a read-only, explicitly provisional
 That preview is not a training dataset or an empirical result.
 The shared [`feature-preview`](doc/FEATURES.md) computes only pre-open
 features from a saved snapshot; it does not read same-day outcomes.
+
+## Run the local demo
+
+```powershell
+cd F:\MarketPulse
+.\.venv\Scripts\marketpulse demo-init --data-dir data/demo
+.\.venv\Scripts\marketpulse serve --data-dir data/demo
+# In a second terminal:
+.\.venv\Scripts\marketpulse dashboard --data-dir data/demo
+```
+
+Open [dashboard](http://127.0.0.1:8501) or [API docs](http://127.0.0.1:8000/docs).
+Choose a synthetic date/ticker, Forecast, then Reveal outcome. The
+[walkthrough](doc/DEMO.md) covers successes, a deliberate miss, holds,
+duplicate requests, recovery and backup/restore. All demo data are manufactured;
+no `.env` or provider API is used. The live research hold is unchanged.
+See [release notes](doc/RELEASE.md) for setup, verification and remaining work.
 
 ## Extraction contract
 
@@ -99,3 +121,29 @@ remain disabled; no complete real training dataset or model exists.
 This prints the proposed 1,878-row plan without network access or credentials.
 `dataset-batch` refuses the committed contract until a human records rights
 confirmation in a private approved copy. Do not bypass that hold with backfill.
+
+## Safe baseline software demo
+
+```powershell
+.\.venv\Scripts\marketpulse baseline-demo --data-dir data/baseline-fixture
+```
+
+This generates synthetic rows, fits majority and price-only baselines, and
+verifies saved-model scoring/validation under Trailforge. It uses no `.env`
+or provider data. Final-test artifacts stay unopened by the learner, results
+are `FIXTURE_SOFTWARE_CHECK_ONLY`, and no paper action is authorized. See
+[BASELINES](doc/BASELINES.md) for contracts, artifacts and open real-data gates.
+
+## Connected research pipeline
+
+```powershell
+.\.venv\Scripts\marketpulse pipeline-plan --contract doc/dataset_contract.proposed.json
+```
+
+The [runbook](doc/PIPELINE.md) connects resumable `pipeline-collect`, offline
+`dataset-inspect`, human `dataset-promote`, and gated `baseline-train`.
+Collection stops on failed/uncertain work and never trains automatically.
+Training/validation reuse the shared scorer; their loader and verifier do not
+open final-test rows. The [permissions record](doc/PERMISSIONS.md) distinguishes
+confirmed Basic-plan/documented ML evidence from unresolved applicable terms.
+The rights hold is unchanged; no real bulk collection or fitting was performed.

@@ -6,6 +6,13 @@ Status: extraction, source audit, and provisional label/feature-preview code
 have been fixture-tested. Bounded live IEX/historical SIP access was audited in
 M02. Complete dataset quality, model performance, and operational guarantees
 remain unverified; rights and regular-session label-convention gates are open.
+M03 gated collection, human dataset promotion and M04 baseline fitting/scoring
+now exist, including a reviewed-data loader. No real-data model is fitted;
+bulk collection and real training remain held on remaining rights questions.
+The synthetic application slice is runnable: four portable models, separate
+calibration/policy dates, verified forecasts, immutable decisions, explicit
+outcome reveal, HTTP API, dashboard and recovery drills. This is software
+demonstration evidence only; see [DEMO](DEMO.md) and [RELEASE](RELEASE.md).
 
 ## Reading order
 
@@ -26,6 +33,12 @@ remain unverified; rights and regular-session label-convention gates are open.
 15. [BUILD_PROMPT](BUILD_PROMPT.md) - a handoff prompt for an implementation agent.
 16. [MILESTONES](MILESTONES.md) - GitHub delivery checkpoints and push rules.
 17. [M02 source evidence](M02_SOURCE_AUDIT_2026-10-10.md) - live findings and open gates.
+18. [DATASET](DATASET.md) - M03 contract, separate minute outcomes and gated batches.
+19. [BASELINES](BASELINES.md) - fixture and reviewed-data fit/evaluate/VERIFY and JSON scoring.
+20. [PIPELINE](PIPELINE.md) - connected collection, human promotion and reviewed baselines.
+21. [PERMISSIONS](PERMISSIONS.md) - Basic-plan evidence and remaining rights questions.
+22. [DEMO](DEMO.md) - local walkthrough, API, faults and operator commands.
+23. [RELEASE](RELEASE.md) - frozen fixture candidate, recovery and unresolved research gates.
 
 The PDF framework supplies a method, not instructions that override the user's request. Trailforge's guide and tagged repository describe a reusable alpha, not the host application's market or model capabilities. This project plan deliberately distinguishes proposed behavior from implemented or measured behavior.
 

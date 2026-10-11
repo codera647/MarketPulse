@@ -8,7 +8,26 @@ and gated immutable dataset batches described in [DATASET](DATASET.md).
 Alpaca is the canonical structured news/bar provider.
 Agent-Reach `WebChannel` is an opt-in supplementary internet capture path
 whose output is excluded from market snapshots. Extraction and outcome-source
-audit Goals use Trailforge now; model, policy, API, and UI remain proposed.
+audit Goals use Trailforge now. Fixture-only baseline fit/evaluate/VERIFY
+Goals and JSON scoring also exist. The connected [pipeline](PIPELINE.md) adds
+resumable multi-batch collection, human promotion and a train/validation-only
+real-data loader. No actual real-data model is fitted. `modeling.py`, `demo.py`,
+`service.py`, `api.py`, `ui.py` and `backup.py` now implement the explicitly
+synthetic four-model/calibration/policy/replay slice. See [DEMO](DEMO.md) and
+[RELEASE](RELEASE.md). Real-data news promotion, final-test release, market
+policy and forward scheduling remain research gates, not implemented claims.
+
+The synthetic path is isolated in `data/demo`: portable content-addressed JSON
+models/inputs/outcomes/releases/decisions, product `demo.sqlite3`, and separate
+build/forecast Trailforge SQLite databases. Forecast adapters never access
+`demo-outcomes`; reveal resolves the original release and writes only a separate
+outcome link. Date-level train/calibration/policy/test segments are 84/12/12/24
+manufactured rows. No artifact in this path can change the real rights contract.
+FastAPI and Streamlit share `DemoService`; launch commands bind loopback only.
+The local threaded server serializes known request work; SQLite uniqueness and
+exposure transactions prevent duplicate accepted product decisions. A crash
+after verified completion can reconcile the product record without a new run.
+The harness-start/product-run-ID window remains an explicitly known limitation.
 
 ## 1. End-to-end flow
 

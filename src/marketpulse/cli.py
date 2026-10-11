@@ -96,7 +96,179 @@ def main(argv: list[str] | None = None) -> int:
     outcome.add_argument("--adjustment", choices=("raw", "split", "all"), default="split")
     outcome.add_argument("--data-dir", type=Path, default=Path("data/m03"))
     outcome.add_argument("--env-file", type=Path)
+    baseline = commands.add_parser(
+        "baseline-demo", help="synthetic majority/price software check; no provider access"
+    )
+    baseline.add_argument("--data-dir", type=Path, default=Path("data/baseline-fixture"))
+    baseline.add_argument("--seed", type=int, default=42)
+    workflow_plan = commands.add_parser(
+        "pipeline-plan", help="credential-free collection batches and research gates"
+    )
+    workflow_plan.add_argument("--contract", required=True, type=Path)
+    workflow_plan.add_argument("--batch-sessions", type=int, default=20)
+    collect = commands.add_parser(
+        "pipeline-collect", help="resumable, rights-gated collection; no automatic training"
+    )
+    collect.add_argument("--contract", required=True, type=Path)
+    collect.add_argument("--batch-sessions", type=int, default=20)
+    collect.add_argument("--max-batches", type=int, default=1)
+    collect.add_argument("--data-dir", type=Path, default=Path("data/m03"))
+    collect.add_argument("--env-file", type=Path)
+    inspect = commands.add_parser("dataset-inspect", help="offline lineage and completeness report")
+    inspect.add_argument("--contract", required=True, type=Path)
+    inspect.add_argument("--data-dir", type=Path, default=Path("data/m03"))
+    promote = commands.add_parser("dataset-promote", help="record an explicit human quality review")
+    promote.add_argument("--contract", required=True, type=Path)
+    promote.add_argument("--review", required=True, type=Path)
+    promote.add_argument("--data-dir", type=Path, default=Path("data/m03"))
+    train = commands.add_parser(
+        "baseline-train", help="reviewed real-data baselines; validation only, final test locked"
+    )
+    train.add_argument("--contract", required=True, type=Path)
+    train.add_argument("--promotion-hash", required=True)
+    train.add_argument("--data-dir", type=Path, default=Path("data/m03"))
+    full_demo = commands.add_parser("demo-init", help="build the full credential-free fixture demo")
+    full_demo.add_argument("--data-dir", type=Path, default=Path("data/demo"))
+    full_demo.add_argument("--seed", type=int, default=42)
+    forecast = commands.add_parser(
+        "demo-forecast", help="verified synthetic replay; no broker orders")
+    forecast.add_argument("--symbol", required=True)
+    forecast.add_argument("--session", required=True, type=date.fromisoformat)
+    forecast.add_argument("--fault", default="NONE", choices=(
+        "NONE", "STALE", "MISSING_NEWS", "TIMEOUT", "EXPIRED", "LOW_CONFIDENCE"))
+    forecast.add_argument("--data-dir", type=Path, default=Path("data/demo"))
+    for name in ("demo-reconcile", "demo-evaluation", "demo-ops", "serve", "dashboard"):
+        command = commands.add_parser(name, help="local-only synthetic demo operation")
+        command.add_argument("--data-dir", type=Path, default=Path("data/demo"))
+        if name in {"serve", "dashboard"}:
+            command.add_argument("--port", type=int, default=8000 if name == "serve" else 8501)
+    backup = commands.add_parser("demo-backup", help="stop other writers before fixture backup")
+    backup.add_argument("--data-dir", type=Path, default=Path("data/demo"))
+    backup.add_argument("--destination", type=Path, required=True)
+    restore = commands.add_parser("demo-restore", help="restore to a NEW directory and verify")
+    restore.add_argument("--backup-dir", type=Path, required=True)
+    restore.add_argument("--destination", type=Path, required=True)
+    restore.add_argument("--manifest-hash", required=True)
     arguments = parser.parse_args(argv)
+
+    if arguments.command in {"demo-init", "demo-forecast", "demo-reconcile", "demo-evaluation",
+                              "demo-ops", "serve", "dashboard", "demo-backup", "demo-restore"}:
+        from marketpulse.service import DemoService
+
+        try:
+            if arguments.command == "demo-init":
+                from marketpulse.demo import run_full_demo
+
+                result = run_full_demo(arguments.data_dir, seed=arguments.seed)
+            elif arguments.command == "demo-backup":
+                from marketpulse.backup import backup_demo
+
+                result = backup_demo(arguments.data_dir, arguments.destination)
+            elif arguments.command == "demo-restore":
+                from marketpulse.backup import restore_demo
+
+                result = restore_demo(arguments.backup_dir, arguments.destination,
+                                      arguments.manifest_hash)
+            elif arguments.command in {"serve", "dashboard"}:
+                if not 1024 <= arguments.port <= 65535:
+                    raise ValueError("port must be 1024 to 65535")
+                DemoService(arguments.data_dir).ready()
+                if arguments.command == "serve":
+                    import uvicorn
+
+                    from marketpulse.api import create_app
+
+                    uvicorn.run(create_app(arguments.data_dir), host="127.0.0.1",
+                                port=arguments.port, log_level="warning")
+                else:
+                    import os
+                    import subprocess
+
+                    environment = os.environ.copy()
+                    environment["MARKETPULSE_DEMO_DATA_DIR"] = str(arguments.data_dir.resolve())
+                    return subprocess.call([
+                        sys.executable, "-m", "streamlit", "run",
+                        str(Path(__file__).with_name("ui.py")), "--server.address=127.0.0.1",
+                        f"--server.port={arguments.port}", "--server.headless=true",
+                        "--browser.gatherUsageStats=false"], env=environment)
+                return 0
+            else:
+                service = DemoService(arguments.data_dir)
+                if arguments.command == "demo-forecast":
+                    result = service.forecast(arguments.symbol, arguments.session.isoformat(),
+                                              fault=arguments.fault)
+                else:
+                    result = {"demo-reconcile": service.reconcile,
+                              "demo-evaluation": service.evaluation,
+                              "demo-ops": service.operations}[arguments.command]()
+        except Exception as error:
+            print(f"demo operation refused or failed: {type(error).__name__}; "
+                  "check readiness and local fixture evidence; no secrets logged", file=sys.stderr)
+            return 2
+        print(json.dumps(result, indent=2, sort_keys=True))
+        return 0 if result.get("state") in {None, "COMPLETE"} else 1
+
+    if arguments.command in {"pipeline-plan", "pipeline-collect", "dataset-inspect",
+                              "dataset-promote", "baseline-train"}:
+        from marketpulse.research import (
+            collect_dataset,
+            collection_plan,
+            inspect_dataset,
+            load_review,
+            promote_dataset,
+            saved_pipeline,
+            train_reviewed_baselines,
+        )
+
+        try:
+            contract = load_contract(arguments.contract)
+            if arguments.command == "pipeline-plan":
+                result = collection_plan(contract, batch_sessions=arguments.batch_sessions)
+            elif arguments.command == "pipeline-collect":
+                # Rights and budget failures must occur before credentials or database writes.
+                validate_contract(contract, require_approval=True)
+                collection_plan(contract, batch_sessions=arguments.batch_sessions)
+                if not 1 <= arguments.max_batches <= 50:
+                    raise ValueError("collection budget must be 1 to 50 batches")
+                settings = load_alpaca_settings(arguments.env_file)
+                pipeline = ExtractionPipeline(arguments.data_dir, AlpacaClient(
+                    settings.key, settings.secret, base_url=settings.data_url))
+                result = collect_dataset(
+                    pipeline, contract, batch_sessions=arguments.batch_sessions,
+                    max_batches=arguments.max_batches,
+                    progress=lambda item: print(json.dumps(item, sort_keys=True), file=sys.stderr))
+            else:
+                if arguments.command != "dataset-inspect":
+                    validate_contract(contract, require_approval=True)
+                pipeline = saved_pipeline(arguments.data_dir)
+                if arguments.command == "dataset-inspect":
+                    result = inspect_dataset(pipeline, contract)
+                elif arguments.command == "dataset-promote":
+                    result = promote_dataset(pipeline, contract, load_review(arguments.review))
+                else:
+                    result = train_reviewed_baselines(pipeline, contract, arguments.promotion_hash)
+        except Exception as error:
+            print(f"research workflow refused or failed: {type(error).__name__}; "
+                  "check approvals, review evidence and saved lineage; "
+                  "no secrets or provider payloads logged", file=sys.stderr)
+            return 2
+        print(json.dumps(result, indent=2, sort_keys=True))
+        if result.get("state") not in {None, "COMPLETE"}:
+            return 1
+        failed = result.get("status") in {"BATCH_BLOCKED", "INTEGRITY_BLOCKED", "INCOMPLETE"}
+        return 1 if failed else 0
+
+    if arguments.command == "baseline-demo":
+        from marketpulse.baselines import run_baseline_demo
+
+        try:
+            result = run_baseline_demo(arguments.data_dir, seed=arguments.seed)
+        except Exception as error:
+            print(f"fixture baseline failed: {type(error).__name__}; "
+                  "no secrets or provider payloads logged", file=sys.stderr)
+            return 2
+        print(json.dumps(result, indent=2, sort_keys=True))
+        return 0 if result["state"] == "COMPLETE" else 1
 
     if arguments.command in {"dataset-plan", "dataset-batch", "regular-outcome"}:
         try:
