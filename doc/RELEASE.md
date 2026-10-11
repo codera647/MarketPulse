@@ -35,8 +35,10 @@ against sklearn; no pickle is loaded. The code version is the Git delivery commi
 Local final full suite: **170 passed in 203.79 seconds**, with one upstream
 Starlette/httpx deprecation warning left visible. Ruff (src/tests/scripts) and
 pip dependency checks pass. Staged scan: 31 intended paths, zero findings.
-Actual loopback readiness and Streamlit health checks return success. Remote
-CI evidence is separate and recorded after delivery in CHECKPOINT.
+Actual loopback readiness and Streamlit health checks return success. The
+[clean Windows CI](https://github.com/codera647/MarketPulse/actions/runs/38143063435)
+also passed dependency-snapshot installation, pip check, lint and fixture tests
+for source commit `9e73e3e`; see CHECKPOINT. This does not validate live data.
 
 `tests/test_demo.py` exercises four-model portable scoring, artifact tampering,
 cutoff/split/calibration separation, policy segment isolation, invalid

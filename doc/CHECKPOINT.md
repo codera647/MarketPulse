@@ -313,8 +313,9 @@ The dashboard interaction was verified headlessly with Streamlit AppTest;
 no browser visual inspection is claimed. Live local `/health/ready` returns
 FIXTURE-ready and Streamlit `/_stcore/health` returns HTTP 200 `ok`.
 
-Background services were started hidden on the user's machine: API PID 16300,
-dashboard launcher PID 14716 (Streamlit has a child process). URLs:
+Background services were started hidden on the user's machine: API launcher
+PID 16300 and dashboard launcher PID 14716; listening child PIDs were 6104
+(API) and 12552 (UI) when checked. These PIDs are not permanent identities. URLs:
 http://127.0.0.1:8000/docs and http://127.0.0.1:8501. Logs are ignored under
 `data/demo-*.log`. Do not kill unrelated processes if ports later change owner.
 No provider collection, real training, account changes or order submission ran.
@@ -325,3 +326,26 @@ tests prove full-demo repeated runs reuse their release/run and healthy empty
 news/unknown tokens do not expand training vocabulary. M07's local synthetic
 API/demo acceptance is satisfied; other empirical/forward-release criteria
 remain explicitly open. Do not infer real model completion from this delivery.
+
+Software delivery commit:
+[`9e73e3e`](https://github.com/codera647/MarketPulse/commit/9e73e3ecea443452e567594dbf761deb2f2fc56d).
+The 31-file source/docs update was pushed normally to private `main`;
+the worktree was clean after the push. GitHub CI for that exact commit is
+[run 38143063435](https://github.com/codera647/MarketPulse/actions/runs/38143063435).
+The GitHub connector verified **success** for this exact source commit: clean
+Windows/Python 3.13 dependency-snapshot installation, pip check, lint and full
+fixture regression all passed in job `114480697849`. This is independent
+fresh-runner evidence, not a live-data certification. Follow-up documentation
+records these results; no source changes followed the verified software commit.
+No market-data milestone was closed merely from fixtures.
+[M07](https://github.com/codera647/MarketPulse/milestone/8) was closed after the
+source push and local API/demo acceptance evidence, explicitly scoped to a
+FIXTURE-only demonstration. M03/M04/M05/M06/M08 remain open for their respective
+real-data/forward/release evidence, despite substantial implemented software.
+
+Real HTTP smoke checks (not TestClient) also returned the expected fixture
+AMZN PAPER_LONG, AAPL deliberate DOWN→UP miss, JPM TIMEOUT→WAITING_HUMAN
+with null action, XOM STALE→BLOCKED, and NVDA neutral→ABSTAIN. Repeat requests
+reuse their decision/run. No synthetic performance number was interpreted as
+market accuracy. The unchanged `pipeline-plan` still reports rights_confirmed
+false, ready_for_training false, network_used false and the agreed 1,878 rows.
