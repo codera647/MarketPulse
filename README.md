@@ -5,12 +5,14 @@ explicit dataset review and baseline training software**, plus a runnable
 **synthetic local replay demo** with four models, calibration, Trailforge-backed
 decisions, FastAPI, Streamlit and recovery tools. The scope remains
 AAPL, NVDA, AMZN, JPM, XOM, WMT, and benchmark SPY.
-It can fit and replay fixture models, but has no trained
-market model or trading capability. Reviewed real-data fitting is implemented
-but has not been run. Live IEX and historical SIP access have
-been sampled under Trailforge;
+The private v1 research run now has 13,056 accepted real company-day rows,
+four trained comparison models and a verified 1,104-row retrospective 2026 test.
+The selected model underperformed the majority accuracy baseline and remains
+research-only; see [measured results](doc/FINAL_TEST.md). There is no broker-order
+capability or real-model deployment approval. Live IEX and historical SIP access
+have been sampled under Trailforge;
 see the [M02 audit](doc/M02_SOURCE_AUDIT_2026-10-10.md) for coverage and open
-data-rights and label-convention gates. The product plan is in [`doc/`](doc/README.md).
+source limitations. The product plan is in [`doc/`](doc/README.md).
 The [delivery milestones](doc/MILESTONES.md) track completed stages and
 the user's requested GitHub commit/push checkpoints.
 
@@ -34,7 +36,8 @@ Open [dashboard](http://127.0.0.1:8501) or [API docs](http://127.0.0.1:8000/docs
 Choose a synthetic date/ticker, Forecast, then Reveal outcome. The
 [walkthrough](doc/DEMO.md) covers successes, a deliberate miss, holds,
 duplicate requests, recovery and backup/restore. All demo data are manufactured;
-no `.env` or provider API is used. The live research hold is unchanged.
+no `.env` or provider API is used. This dashboard remains FIXTURE-only; it has
+not been connected to the real research models.
 See [release notes](doc/RELEASE.md) for setup, verification and remaining work.
 
 ## Extraction contract
@@ -111,16 +114,34 @@ human review before training claims.
 The [dataset runbook](doc/DATASET.md) describes the resumable historical batch
 pipeline, separate verified regular-minute outcome ledger, immutable rows and
 lineage/gap/leakage reports. A fixed 1% threshold and chronological dates are
-agreed. Data rights are **not yet confirmed**, so bulk collection and training
-remain disabled; no complete real training dataset or model exists.
+agreed in the original small draft. The user subsequently attested source
+permissions and authorized the larger private 2018–2026 research run; see
+[REAL_DATA_RUN](doc/REAL_DATA_RUN.md). The committed small draft remains
+unapproved, while the executed larger approved contract and data stay private.
+Human quality/point-in-time/deployment promotion remains separate and open.
 
 ```powershell
 .\.venv\Scripts\marketpulse dataset-plan --contract doc/dataset_contract.proposed.json
 ```
 
-This prints the proposed 1,878-row plan without network access or credentials.
+This prints the original proposed 1,878-row plan without network or credentials.
 `dataset-batch` refuses the committed contract until a human records rights
 confirmation in a private approved copy. Do not bypass that hold with backfill.
+
+## Enriched and weighted v2 research
+
+[RESEARCH_V2](doc/RESEARCH_V2.md) describes the separately authorized experiment:
+company identity, sector-proxy context, before-09:00 pre-market features,
+frozen financial-news sentiment/events, class-weighted logistic ablations and
+CatBoost. It preserves v1 and uses only 2018–2025 development data; the exposed
+2026 period is not presented as a new untouched final test. The v2 implementation
+passes 222 regression tests; its first real build is in progress, not yet a
+measured accuracy improvement. Its FinBERT candidate is non-commercial research
+only and has an incomplete historical corpus audit.
+
+Commands are `research-v2-build` and `research-v2-predict`; setup, private status
+and saved label-free inference examples are in the runbook. All data/model
+artifacts remain ignored under `data/`, and paper actions stay prohibited.
 
 ## Safe baseline software demo
 

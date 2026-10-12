@@ -22,6 +22,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8,<10", "ruff>=0.8,<1", "httpx==0.28.1"]
+research-v2 = ["catboost==1.2.10", "transformers==5.19.0", "torch==2.14.1"]
 
 [project.scripts]
 marketpulse = "marketpulse.cli:main"

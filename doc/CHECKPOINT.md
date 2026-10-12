@@ -1,5 +1,39 @@
 # MarketPulse checkpoint for the next agent
 
+## Active v2 experiment — 2026-10-12
+
+The user approved applying class weighting, richer market/company features and
+financial-news meaning, then requested completion. See [RESEARCH_V2](RESEARCH_V2.md)
+and D25 in [DECISION](DECISION.md). V1 datasets/models/test report stay unchanged.
+V2 uses only the 11,952 audited 2018–2025 train/development rows; previously
+exposed 2026 outcomes are not a new untouched final test and are not fitted here.
+
+The six new v2 modules and CLI build/predict commands are implemented. The
+first full regression run passed 221 tests; all 16 focused v2 checks now pass,
+including source-entity projection and feature-chunk replay. The final full suite
+passed 222 tests after those corrections. Dependency checks/lint pass.
+Pinned optional CatBoost/Transformers/Torch dependencies are installed and
+locked. FinBERT's pinned weights are cached; actual local inference succeeded.
+
+The first v2 preflight was deliberately stopped before any v2 native task
+started, to recover source company tags omitted by v1's compact news records.
+Only owned processes were stopped; original logs and the dead owner's lock
+were archived as `v2-build.interrupted-preflight.lock`. No failed/UNKNOWN task
+was reset. The corrected run is active under
+`data/research-v2-20261012/v2-status.json`; logs are
+`v2-build-r2.stderr.log` and `.stdout.log`. The current owner was PID 20192,
+launcher 16720, at 15:19 UTC; always recheck live identity, not these stale PIDs.
+It was verifying 1,800/11,952 original rows then; no v2 model accuracy is yet
+claimed. Native lease limits remain <=300s and features use 300-row chunks.
+
+News sentiment is a frozen non-commercial FinBERT research feature with an
+incomplete historic corpus audit. News-event flags are heuristic; verified
+earnings calendar/consensus remain unavailable, explicitly null with flags.
+The queued workflow collects SIP context, caches sentiment, constructs v2,
+checks 18 settings on three folds and fits five calibrated final candidates.
+Paper actions/deployment are forbidden; final_test_completed remains false.
+Do not duplicate an active builder or remove its owner lock.
+
 ## Latest completed held-out test — 2026-10-12
 
 The user asked to complete the next step after verified training. The real

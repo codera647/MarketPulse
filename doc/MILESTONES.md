@@ -1,5 +1,12 @@
 # GitHub delivery milestones
 
+Latest v2 software evidence, 2026-10-12: enriched/weighted research CLI, source
+captures, financial sentiment, feature chunks, chronological model search and
+saved inference are implemented; 222 regression tests, lint and dependency
+checks pass. The authorized first real v2 run is still in source preflight.
+No v2 accuracy improvement or new blind test is claimed. See [RESEARCH_V2](RESEARCH_V2.md).
+V1 evidence below remains unchanged; human quality/deployment gates stay open.
+
 Latest completed 2026-10-12 research step: training and the frozen held-out test
 are verified COMPLETED/PASS. Test covers 1,104 examples / 184 complete dates;
 selected text model accuracy is 49.82% versus majority 51.72%, with poor UP/DOWN

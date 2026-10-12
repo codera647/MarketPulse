@@ -100,4 +100,41 @@ explicit research authorization route, never unmasked/human promotion. This
 conservative lexical rule can also mask distinct events with identical titles.
 See REAL_DATA_RUN and the masking/held-out tests; no market skill is implied.
 
+## D25 — Separate enriched and weighted v2 experiment (2026-10-12)
+
+The user authorized implementing the three proposed improvements together:
+class weighting, richer market/company inputs, and financial-news meaning.
+Preserve v1 contracts, raw data, models, selection, and exposed test report.
+V2 is a separate private research experiment under Trailforge. Keep six targets,
+SPY context, the 09:00 America/New_York cutoff and the fixed +/-1% minute-proxy
+open-to-close labels. Sector ETFs are context, not additional prediction targets.
+
+Use only 2018–2024 training and 2025 development/calibration/selection for this
+first v2 run. Time-grouped expanding folds ending in 2022, 2023 and 2024 select
+bounded model settings. Keep whole dates together and embargo one exchange date.
+The January–September 2026 test has already been inspected: it is NOT a new
+blind test, and this run does not use its outcomes for fitting or selection.
+A future forward test requires a separately frozen collection/evaluation plan.
+
+Collect historical SIP raw daily context and 30-minute pre-market bars into a
+separate v2 directory, preserving pages/queries/feed/receipt hashes. Only bars
+fully ended by 09:00 may contribute to pre-market features. Missing observations
+are explicit nulls and coverage flags, not invented zero activity. Sector
+assignment is a fixed research proxy mapping, not a historical GICS claim.
+News earnings/event flags are NOT a verified earnings calendar or numerical
+earnings surprise; unavailable schedule/consensus features remain explicitly
+unavailable. Do not purchase new data subscriptions or claim unavailable inputs.
+
+FinBERT is a pinned frozen text feature extractor, not a price predictor. Its
+published non-commercial weight terms and incomplete corpus/date audit restrict
+this candidate to the existing private non-commercial research demo. Do not
+commercially deploy it or certify it as a historical point-in-time model.
+Keep heuristic event/entity flags distinct from its sentiment probabilities.
+No sentiment fine-tuning or invented article annotations are authorized.
+Fit imputation/scaling/vocabulary/class weights only on each training segment;
+calibrate on a separate 2025 segment. Compare majority, unweighted/weighted
+logistic ablations and enriched CatBoost on identical dates. No promised
+accuracy uplift, paper actions, deployment promotion or automatic test reuse.
+See [RESEARCH_V2](RESEARCH_V2.md) for the frozen implementation specification.
+
 For each open item, log owner, date, evidence link, considered options, effect on scope, and whether it blocks S1 feasibility, final-test lock, or release. Never convert an untested assumption into an achieved metric. The first explicit stop/go gate is data access and point-in-time quality; the second is model/coverage evidence before paper action; the third is recovery and demo readiness.

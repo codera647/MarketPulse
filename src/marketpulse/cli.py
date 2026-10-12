@@ -159,6 +159,17 @@ def main(argv: list[str] | None = None) -> int:
     real_evaluate.add_argument("--data-dir", required=True, type=Path)
     real_evaluate.add_argument("--release-hash", required=True)
     real_evaluate.add_argument("--authorization-evidence", required=True)
+    v2_build = commands.add_parser(
+        "research-v2-build", help="separate enriched/weighted research; no new final-test claim")
+    v2_build.add_argument("--base-data-dir", required=True, type=Path)
+    v2_build.add_argument("--base-release-hash", required=True)
+    v2_build.add_argument("--data-dir", required=True, type=Path)
+    v2_build.add_argument("--authorization-evidence", required=True)
+    v2_build.add_argument("--env-file", type=Path)
+    v2_predict = commands.add_parser("research-v2-predict", help="saved input-only v2 inference")
+    v2_predict.add_argument("--data-dir", required=True, type=Path)
+    v2_predict.add_argument("--release-hash", required=True)
+    v2_predict.add_argument("--input-hash", required=True)
     full_demo = commands.add_parser("demo-init", help="build the full credential-free fixture demo")
     full_demo.add_argument("--data-dir", type=Path, default=Path("data/demo"))
     full_demo.add_argument("--seed", type=int, default=42)
@@ -182,6 +193,27 @@ def main(argv: list[str] | None = None) -> int:
     restore.add_argument("--destination", type=Path, required=True)
     restore.add_argument("--manifest-hash", required=True)
     arguments = parser.parse_args(argv)
+
+    if arguments.command in {"research-v2-build", "research-v2-predict"}:
+        from marketpulse.v2_pipeline import build_v2, predict_v2
+
+        try:
+            if arguments.command == "research-v2-build":
+                settings = load_alpaca_settings(arguments.env_file)
+                result = build_v2(
+                    arguments.base_data_dir, arguments.data_dir, arguments.base_release_hash,
+                    AlpacaClient(settings.key, settings.secret, base_url=settings.data_url),
+                    evidence=arguments.authorization_evidence,
+                    progress=lambda event: print(json.dumps(event), file=sys.stderr, flush=True))
+            else:
+                result = predict_v2(
+                    arguments.data_dir, arguments.release_hash, arguments.input_hash)
+            print(json.dumps(result, indent=2, sort_keys=True))
+            return 0
+        except Exception as error:
+            print(f"v2 research failed: {type(error).__name__}; inspect private status/receipts; "
+                  "no secrets or provider text logged", file=sys.stderr)
+            return 2
 
     if arguments.command == "research-evaluate":
         from marketpulse.real_evaluation import evaluate_real_research
