@@ -2,6 +2,81 @@
 
 ## Active v2 experiment — 2026-10-12
 
+Latest operational state, 18:13 UTC / 23:13 Pakistan: user confirmed AC/lid
+open and Win32 independently reports AC online. R7 had been suspended from
+22:44:02 to 23:04:52 Pakistan and stopped with an expired task. Its complete
+64-output batch passed independent FP32 sampled replay under child run
+`adc9bf22-5518-47e7-b921-1c238c43ee5c`. Original run
+`8ecd0046-d468-479a-9467-3d1becaabad6` remains held UNKNOWN/EXPIRED_ATTEMPT;
+no original adapter retry or authority reset occurred. Archived R7 status is
+`v2-status.r7-standby-error.json`. R8 launcher PID 18812 resumes the identical
+binding, with `v2-build-r8.*.log`; check live status/lock before any new launch.
+The guarded full suite passed 229 tests in 493.40s. An additional unstarted
+context-task reconciliation rejection test brings focused coverage to 24 tests,
+all passing in 26.09s. The final guarded full suite passed all 230 tests in
+578.29s; lint and dependency checks pass. At 18:22 UTC the R8 owner PID 7324
+had processed 8,768 / 26,833 headlines. This is a dated snapshot, not completion.
+
+On Modern Standby/DC, Windows may end system-required requests five minutes
+after the sleep timeout. AC is required for this long run; the request does not
+override explicit Sleep or lid actions. No power plan/security changes were made.
+
+Earlier operational recovery: R6 stopped at 3,520 / 26,833 headlines because
+Windows Modern Standby events 506/507 suspended the host from 22:22:16 to
+22:27:11 Pakistan. All 64 scores in the interrupted batch were present, with
+matching immutable text/spec bindings. Independent sampled FP32 replay passed
+under child run `dc64ded8-76ef-4e3c-882b-74ca856092c6`; its registered positive
+receipt permits resume. The original run `a8434172-379e-4f07-8688-b5e1c78c0f96`
+remains UNKNOWN / EXPIRED_ATTEMPT, without original adapter retry/reset.
+
+Owned builds/reconciliation now hold a temporary Windows system-only idle-sleep
+request and restore the previous thread state on exit/error. No display,
+away-mode or permanent power-plan change; explicit user sleep/lid action is
+respected. The regression run is also wrapped in the temporary guard. All 23
+focused v2 tests pass in 25.12s; lint passes. The preceding full run had 222
+passes / 5 shared-fixture setup errors during Standby; it is NOT a passed full
+suite. Its subsequent guarded 229-test rerun passed; the latest state above
+supersedes this historical R6/R7 snapshot.
+
+Current experiment is D26's `financial-news-meaning/4` / `preopen-enriched/4`
+headline-sentiment variant, recorded before any v2 stock-model fitting. The
+full-text FP32 r3 pass was interrupted at about 2,896/26,835 texts because its
+CPU cost exceeded the observed battery window. Its artifacts, status/lock
+archives and logs are preserved; its interrupted native run
+`05adcbb2-0f17-4f0c-be66-bf7f1e536134` was retained as WAITING_HUMAN / UNKNOWN /
+EXPIRED_ATTEMPT, one attempt / one reserved unit, not reset or repeated.
+Frozen FP32 weights are unchanged. Only headline text enters FinBERT; summaries
+remain in TF-IDF, heuristic events and source/input artifacts. Blank cleaned
+headlines have no sentiment, with explicit missingness.
+Input-only word-count bucketing reduces padding. The final batch bound is 64;
+a synthetic worst-length benchmark finished in 47.73s, well below the 300s
+lease, with FP32 probability delta <=3e-8 versus batches of 16. Blank cleaned
+headlines have no sentiment but valid full-summary event flags are retained.
+New specification-bound cache
+identities prevent mixing variants. See D26 and RESEARCH_V2 for the context
+tradeoff and measured runtime diagnostic; it is not a model-quality result.
+
+R4's 16-document headline pilot was interrupted at 2,896 / 26,833 texts before
+any stock-model fit. Its logs and `v2-status.r4-headline-pilot-interrupted.json`
+/ `v2-build.r4-headline-pilot-interrupted.lock` are preserved. No attempt is
+reset. R5 stopped on a transient Windows status-file sharing violation before
+news extraction: the last committed JSON and STOPPED temporary JSON are archived
+as `v2-status.r5-reader-error.json` / `.tmp`. A bounded atomic-rename retry
+(40 attempts, 50ms delays, status only) is checked for transient/permanent
+failures. It never retries or resets native work. R6 resumed the identical
+modeling binding `d677b38454b46ad6b0e26ee8fb0f30349225c15e920b1336fab7b140baf81610`;
+owner was PID 16436 / launcher 16312 at 17:12 UTC. Recheck live identity.
+Active status is `v2-status.json`; historical R6 logs are `v2-build-r6.*.log`; the r3 snapshot
+and lock are `v2-status.r3-fulltext-interrupted.json` and
+`v2-build.r3-fulltext-interrupted.lock`. Existing 194 verified source captures
+were reused without refetching. The new corpus has 26,833 unique usable cleaned
+headlines, with all 11,952 company-day rows retained. The earlier amendment
+passed all 224 regression tests in 584.21s. The final bounded-batch/event checks
+passed all 19 focused v2 tests in 30.93s and all 225 regression checks in 414.01s.
+With the Windows status retry, all 21 focused checks pass in 40.09s; the final
+full 227-test run had Standby setup failures; later guarded results are above.
+No v2 predictive-model result is yet claimed. Do not duplicate the active owner.
+
 Latest recovery evidence: the r2 builder stopped at 85/194 context queries when
 the June 2021 source attempt outlasted its five-minute lease. Its eight saved
 pages / 3,665 records were independently validated and reconciled under a

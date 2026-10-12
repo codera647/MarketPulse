@@ -11,8 +11,14 @@ from zoneinfo import ZoneInfo
 
 from marketpulse.clock import parse_time
 from marketpulse.constants import STOCKS
-from marketpulse.storage import ExtractionStore, RawStore, canonical_bytes, digest
-from marketpulse.v2_runtime import check_receipt, environment, supervised
+from marketpulse.storage import RawStore, canonical_bytes, digest
+from marketpulse.v2_runtime import (
+    check_receipt,
+    environment,
+    reconciliation_store,
+    retained_expired,
+    supervised,
+)
 
 SECTOR_PROXY = {
     "AAPL": "XLK",
@@ -25,66 +31,18 @@ SECTOR_PROXY = {
 
 
 def _reconciliation_table(root: Path):
-    store = ExtractionStore(root / "v2-jobs.sqlite3")
-    with store.connect() as db:
-        db.execute(
-            "CREATE TABLE IF NOT EXISTS v2_capture_reconciliations ("
-            "parent_job_key TEXT PRIMARY KEY, result_json TEXT NOT NULL)"
-        )
-    return store
+    return reconciliation_store(root)
 
 
 def reconcile_capture(root: Path, parent_key: str, capture_hash: str, *, evidence: str) -> dict:
     """Explicit host reconciliation of a COMPLETE capture, not a retry/reset of UNKNOWN."""
-    from trailforge.runtime import Harness
-
     if not isinstance(evidence, str) or not 1 <= len(evidence.strip()) <= 500:
         raise ValueError("bounded independent source reconciliation evidence required")
     index, artifacts = _reconciliation_table(root), RawStore(root / "artifacts")
-    job = index.get_job(parent_key)
-    if not job or not job["run_id"]:
-        raise ValueError("original source task missing")
-    old = Harness(
-        root / "v2-trailforge.sqlite3",
-        tenant_id="local-demo",
-        resource_id=f"marketpulse:v2:{parent_key}",
-        adapters=[],
-        tenant_limit=1000000,
-        global_limit=10000000,
-    ).inspect(job["run_id"])
-    input_value = old["goal"]["tasks"][0]["input"]
-    if (
-        old["goal"]["tasks"][0]["adapter_id"] != "marketpulse.v2_context/2"
-        or input_value.get("environment") != environment()
-    ):
-        raise ValueError("only matching-version context captures can be reconciled")
-    query = {k: v for k, v in input_value.items() if k != "environment"}
-
-    def no_execution():
-        raise ValueError("reconciliation must never repeat the original source effect")
-
-    # Let the native protocol retain an EXPIRED_ATTEMPT as UNKNOWN. Never resolve_unknown(RETRY).
-    try:
-        supervised(root, "context", query, no_execution, lambda result: None)
-    except ValueError:
-        pass
+    job, _record, query = retained_expired(root, parent_key, "context")
 
     def check_parent():
-        record = Harness(
-            root / "v2-trailforge.sqlite3",
-            tenant_id="local-demo",
-            resource_id=f"marketpulse:v2:{parent_key}",
-            adapters=[],
-            tenant_limit=1000000,
-            global_limit=10000000,
-        ).inspect(job["run_id"])
-        if (
-            record["state"] != "WAITING_HUMAN"
-            or record["active"] is not None
-            or record["tasks"]["execute"]["status"] != "UNKNOWN"
-            or record["tasks"]["execute"]["error_code"] != "EXPIRED_ATTEMPT"
-        ):
-            raise ValueError("original source is not a retained expired UNKNOWN")
+        retained_expired(root, parent_key, "context")
 
     def verify_saved(result):
         check_parent()

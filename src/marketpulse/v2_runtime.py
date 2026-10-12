@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import time
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from importlib.metadata import PackageNotFoundError, version
@@ -16,6 +17,86 @@ from trailforge.runtime import Goal, Harness, Task
 from marketpulse.storage import ExtractionStore, RawStore, canonical_bytes, digest
 
 SCHEMA = "enriched-weighted-research/2"
+
+
+@contextmanager
+def system_awake(request=None):
+    """Temporary Windows idle-sleep request; no display or power-plan changes."""
+    if request is None:
+        if os.name != "nt":
+            yield False
+            return
+        import ctypes
+
+        request = ctypes.WinDLL("kernel32", use_last_error=True).SetThreadExecutionState
+        request.argtypes = [ctypes.c_uint]
+        request.restype = ctypes.c_uint
+    previous = request(0x80000001)  # ES_CONTINUOUS | ES_SYSTEM_REQUIRED, never DISPLAY/AWAYMODE
+    if not previous:
+        raise OSError("temporary Windows idle-sleep request refused")
+    try:
+        yield True
+    finally:
+        if not request(previous | 0x80000000):
+            raise OSError("temporary Windows idle-sleep request restoration failed")
+
+
+def reconciliation_store(root: Path):
+    store = ExtractionStore(root / "v2-jobs.sqlite3")
+    with store.connect() as db:
+        db.execute(
+            "CREATE TABLE IF NOT EXISTS v2_capture_reconciliations ("
+            "parent_job_key TEXT PRIMARY KEY, result_json TEXT NOT NULL)"
+        )
+    return store
+
+
+def retained_expired(root: Path, parent_key: str, stage: str) -> tuple[dict, dict, dict]:
+    """Retain an expired original attempt without invoking either original adapter."""
+    if stage not in {"context", "sentiment"}:
+        raise ValueError("unsupported capture reconciliation stage")
+    job = ExtractionStore(root / "v2-jobs.sqlite3").get_job(parent_key)
+    if not job or not job["run_id"]:
+        raise ValueError("original capture task missing")
+    harness = Harness(
+        root / "v2-trailforge.sqlite3",
+        tenant_id="local-demo",
+        resource_id=f"marketpulse:v2:{parent_key}",
+        adapters=[],
+        tenant_limit=1000000,
+        global_limit=10000000,
+    )
+    record = harness.inspect(job["run_id"])
+    binding = record["goal"]["tasks"][0]["input"]
+    if (
+        record["goal"]["tasks"][0]["adapter_id"] != f"marketpulse.v2_{stage}/2"
+        or binding.get("environment") != environment()
+        or digest({"stage": stage, "binding": binding}) != parent_key
+    ):
+        raise ValueError("capture scope/version differs from original task")
+    original = {k: v for k, v in binding.items() if k != "environment"}
+    if record["state"] == "RUNNING":
+        if not record["active"] or record["active"]["expires_at"] >= time.time():
+            raise ValueError("original capture is not an expired active attempt")
+
+        def forbidden(*args):
+            raise AssertionError("original capture effect must never be repeated")
+
+        try:
+            supervised(root, stage, original, forbidden, forbidden)
+        except ValueError:
+            pass
+        record = harness.inspect(job["run_id"])
+    if (
+        record["state"] != "WAITING_HUMAN"
+        or record["active"] is not None
+        or not any(
+            task["status"] == "UNKNOWN" and task["error_code"] == "EXPIRED_ATTEMPT"
+            for task in record["tasks"].values()
+        )
+    ):
+        raise ValueError("original capture is not a retained expired UNKNOWN")
+    return job, record, original
 
 
 def environment() -> dict:
@@ -153,23 +234,35 @@ def owned_run(root: Path, binding: dict, progress=None):
     owner = {"pid": os.getpid(), "binding_hash": digest(binding)}
     with lock.open("x", encoding="utf-8") as handle:
         json.dump(owner, handle)
+    guard_enabled = False
 
     def checkpoint(event):
         value = {
             "schema": SCHEMA,
             **owner,
+            "host_idle_sleep_guard_enabled": guard_enabled,
             "updated_at_utc": datetime.now(timezone.utc).isoformat(),
             **event,
         }
         pending = root / "v2-status.tmp"
         pending.write_text(json.dumps(value, indent=2), encoding="utf-8")
-        pending.replace(root / "v2-status.json")
+        # Windows readers may briefly deny FILE_SHARE_DELETE. Retain the last
+        # complete JSON and retry only this atomic status rename, never work.
+        for attempt in range(40):
+            try:
+                pending.replace(root / "v2-status.json")
+                break
+            except PermissionError:
+                if attempt == 39:
+                    raise
+                time.sleep(0.05)
         if progress:
             progress(value)
 
     try:
-        checkpoint({"stage": "STARTING", "final_test_completed": False})
-        yield checkpoint
+        with system_awake() as guard_enabled:
+            checkpoint({"stage": "STARTING", "final_test_completed": False})
+            yield checkpoint
     except Exception as error:
         checkpoint(
             {"stage": "STOPPED", "error_type": type(error).__name__, "authority_reset": False}

@@ -13,7 +13,7 @@ from marketpulse.storage import digest
 from marketpulse.v2_news import news_values
 from marketpulse.v2_sources import SECTOR_PROXY, premarket_values
 
-FEATURE_VERSION = "preopen-enriched/2"
+FEATURE_VERSION = "preopen-enriched/4"
 
 
 def mask_rows(rows: list[dict]) -> list[dict]:

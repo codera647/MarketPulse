@@ -1,6 +1,8 @@
 # MarketPulse v2 — enriched, weighted research experiment
 
-Specification recorded 2026-10-12 before v2 training. Status: implementation
+Specification recorded 2026-10-12 before v2 training, with D26's explicitly
+versioned headline-sentiment amendment before any v2 stock-model fitting.
+Status: implementation
 verified; first real run in progress, no v2 accuracy improvement claimed. The user authorized the combined
 improvements. V1 is immutable and its measured negative result stays visible.
 
@@ -36,12 +38,52 @@ in a fresh environment. Keep all generated artifacts under ignored `data/`.
 ## News meaning
 
 Use saved eligible headlines/summaries, preserving financial numbers/negation.
+The active `financial-news-meaning/4` / `preopen-enriched/4` experiment sends
+only cleaned headlines to frozen FP32 FinBERT. Full headlines AND summaries
+remain in TF-IDF, event flags and immutable source/input artifacts. This gives
+sentiment less context than the interrupted full-text variant; do not claim
+they are equivalent. Headline batches are deterministically ordered by clipped
+word count then digest to reduce padding; the final limit is 64 / 96 tokens.
+Same frozen weights, all company-day examples, labels and chronological
+evaluation are retained. A blank cleaned headline has no fabricated sentiment,
+while valid full-text summary event flags are still retained.
+
+In a paired 16-document runtime diagnostic under concurrent processing,
+headline-only scoring took 5.97s versus 13.06s for full text. This measures
+runtime, not predictive accuracy or a guaranteed end-to-end completion time.
+R3's interrupted full-text logs/status/lock and native attempts are preserved;
+their sentiment cache is not mixed with the new specification. The active
+builder uses `v2-build-r8.stderr.log` / `.stdout.log`. The 16-document headline
+pilot (r4) also has archived status/lock/logs and retained native attempts.
+Its feature cache is not reused across the new specification binding.
+
+The final 64-document bound was checked using synthetic maximum-length
+96-token inputs (never training data): 47.73s versus 11.42s for 16 inputs under
+concurrent processing. FP32 probabilities differed by at most 3e-8, and the
+larger batch remains comfortably below the 300s native lease. A regression
+check covers 129 unique documents in three bounded tasks, without omissions.
+
+Windows progress-file readers briefly blocked R5's atomic status rename before
+news extraction. The original committed status and STOPPED temporary status are
+archived, and a bounded status-only PermissionError retry is implemented. Both
+transient recovery and permanent denial are tested; it cannot retry native
+tasks. R6 uses exactly the same modeling binding. Read progress with
+`Get-Content -Raw` to release the file handle promptly.
+
 Apply the approved earlier-date repeated-story masking. Pin a frozen FinBERT
 revision and cache per-text probabilities privately, independent of market
 labels. Aggregate positive/negative/neutral scores by ticker/day, alongside
 heuristic event flags, source-tag/entity relevance, recency and news coverage.
 Missing news signal differs from neutral sentiment. Do not silently fall back
 to fabricated sentiment if model download/inference fails.
+
+Runtime diagnostic, 2026-10-12: the host is a two-core Intel i7-7Y75 with
+no CUDA device. A separate 16-document dynamic-int8 diagnostic took 8.24s
+(6.72s repeat) versus 11.04s FP32 under concurrent collection. The maximum
+sample sentiment-probability difference was 0.545, although int8 replay itself
+was deterministic. This is NOT an equivalent replacement: quantization was
+rejected and never entered the dataset or model search. Continue the pinned
+FP32 experiment; this diagnostic is not a stock-prediction quality result.
 
 FinBERT weights: [ProsusAI model card](https://huggingface.co/ProsusAI/finbert),
 CC BY-NC-SA 4.0 as inspected on 2026-10-12. Attribution: Dogu Araci / MIH AI B.V.;
@@ -127,8 +169,8 @@ immutable private artifact root is `data/research-v2-20261012/artifacts`;
 CatBoost native `.cbm` binaries have independent SHA-256 identities.
 
 ```powershell
-Get-Content data/research-v2-20261012/v2-status.json
-Get-Content data/research-v2-20261012/v2-build-r2.stderr.log -Tail 5
+Get-Content -Raw data/research-v2-20261012/v2-status.json
+Get-Content data/research-v2-20261012/v2-build-r8.stderr.log -Tail 5
 ```
 
 Saved research inference accepts only a label-free input artifact:
@@ -148,13 +190,54 @@ receipt in `v2_capture_reconciliations`. It neither refetches the source nor
 turns arbitrary UNKNOWN attempts into successful original runs. An incomplete
 or mismatched candidate is rejected; normal unregistered held tasks still stop.
 Keep the original held run and the child receipt together for audit. The resumed
-builder uses `v2-build-r3.stderr.log` / `.stdout.log`.
+builder's historical R3 logs are `v2-build-r3.stderr.log` / `.stdout.log`.
 
 ```powershell
 .venv\Scripts\python.exe -m marketpulse.cli research-v2-reconcile `
   --data-dir data/research-v2-20261012 `
   --parent-job-key <expired-context-job-key> `
   --capture-hash <independently-inspected-complete-capture-hash> `
+  --evidence "<bounded dated reconciliation evidence>"
+```
+
+### Modern Standby and expired sentiment recovery
+
+On 2026-10-12 Windows Kernel-Power events 506/507 recorded Modern Standby at
+22:22:16–22:27:11 Pakistan time. R6 stopped at 3,520 headlines after the
+interrupted batch missed its five-minute native lease. Its 64 complete saved
+scores/text bindings were independently inspected before reconciliation; no
+missing outputs are inferred from a partial capture.
+
+The host now holds a temporary `ES_CONTINUOUS | ES_SYSTEM_REQUIRED` request
+only while an owned build or explicit reconciliation runs. The previous thread
+state is restored on exit/error; process termination also ends the request.
+No power plan, display request, away mode, security setting or explicit
+user sleep/lid behavior is changed. See
+[Microsoft's execution-state API](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-setthreadexecutionstate).
+On Modern Standby/DC, Windows terminates system/execution-required requests
+five minutes after the sleep timeout; see
+[Microsoft's power-request limits](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-powersetrequest).
+Keep the computer plugged in and its lid open for long runs. The user confirmed
+this on 2026-10-12 and Win32 independently reported AC online. A subsequent R7
+interruption (22:44:02–23:04:52 Pakistan, before that confirmation) had a complete
+64-score capture; a separate positive child receipt preserved the expired
+original and allowed R8 to resume. See CHECKPOINT for the dated identities.
+
+`research-v2-reconcile-sentiment` requires a complete immutable batch whose
+input/spec/text digests match the expired original task. It retains the original
+UNKNOWN and independently replays first/last FP32 inference under a separate
+typed verification task, with shape/probability checks for every output.
+No original adapter retry or full-corpus replay is claimed. Only its positive
+child receipt can be registered and reused; incomplete/mismatched/live attempts
+are rejected. Unstarted context/sentiment tasks are also rejected without
+calling either original adapter or reserving original attempt units. The
+original attempt/reservation history remains unchanged.
+
+```powershell
+.venv\Scripts\python.exe -m marketpulse.cli research-v2-reconcile-sentiment `
+  --data-dir data/research-v2-20261012 `
+  --parent-job-key <expired-sentiment-job-key> `
+  --sentiment-hash <independently-inspected-complete-batch-hash> `
   --evidence "<bounded dated reconciliation evidence>"
 ```
 

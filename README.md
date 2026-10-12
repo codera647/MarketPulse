@@ -135,7 +135,8 @@ company identity, sector-proxy context, before-09:00 pre-market features,
 frozen financial-news sentiment/events, class-weighted logistic ablations and
 CatBoost. It preserves v1 and uses only 2018–2025 development data; the exposed
 2026 period is not presented as a new untouched final test. The v2 implementation
-passes 222 regression tests; its first real build is in progress, not yet a
+passes 230 regression tests, including 24 focused v2 checks;
+its first real build is in progress, not yet a
 measured accuracy improvement. Its FinBERT candidate is non-commercial research
 only and has an incomplete historical corpus audit.
 

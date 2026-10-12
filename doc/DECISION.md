@@ -137,4 +137,36 @@ logistic ablations and enriched CatBoost on identical dates. No promised
 accuracy uplift, paper actions, deployment promotion or automatic test reuse.
 See [RESEARCH_V2](RESEARCH_V2.md) for the frozen implementation specification.
 
+## D26 — Version the CPU-bounded headline sentiment variant before fitting
+
+2026-10-12, host implementation choice within D25; no v2 stock model has been
+fitted or evaluated. The two-core CPU / absent CUDA device makes full-text
+FinBERT inference slower than the reported battery window. On the same frozen
+16-document diagnostic, headline FP32 inference took 5.97s versus 13.06s for
+headline-plus-summary under concurrent processing. Dynamic int8 was rejected
+because its sample sentiment probabilities changed substantially.
+
+Use a separately identified `financial-news-meaning/4` / `preopen-enriched/4`
+variant: frozen FP32 FinBERT sees the cleaned headline only; complete eligible
+headlines AND summaries remain in TF-IDF, heuristic event features and immutable
+source/input artifacts. This deliberately gives sentiment less context; it is
+not presented as equivalent to full-text sentiment. Keep the 96-token ceiling,
+two CPU threads, all company-day examples, labels, cutoff and chronological
+evaluation. Deterministically bucket headline inputs by clipped word count then
+digest to reduce padding. The final runtime bound is 64 documents: a synthetic
+96-token maximum-length diagnostic took 47.73s, comfortably below the native
+300s lease. Its probabilities matched 16-document FP32 scoring within 3e-8.
+This reduces task overhead without changing weights or truncation. The earlier
+16-document headline pilot is retained separately, not mixed with this cache.
+Blank cleaned headlines do not receive sentiment, but valid full-text event
+flags remain available after the same cutoff/entity checks.
+
+Archive the interrupted full-text owner/status/lock/log evidence and retain all
+its native task history; do not reset UNKNOWN work or mix cached feature
+versions. Source captures and base rows can be reused only through their
+existing positive receipts. New sentiment identities bind the new specification.
+Blank cleaned headlines have no fabricated sentiment; missingness is explicit.
+No corpus/label reduction, external upload, subscription, new test or quality
+promotion is authorized by this change. See RESEARCH_V2 for execution evidence.
+
 For each open item, log owner, date, evidence link, considered options, effect on scope, and whether it blocks S1 feasibility, final-test lock, or release. Never convert an untested assumption into an achieved metric. The first explicit stop/go gate is data access and point-in-time quality; the second is model/coverage evidence before paper action; the third is recovery and demo readiness.

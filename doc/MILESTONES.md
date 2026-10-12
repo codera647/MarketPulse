@@ -1,9 +1,12 @@
 # GitHub delivery milestones
 
-Latest v2 recovery evidence, 2026-10-12: full suite passes 223 tests, lint and
+Latest v2 recovery evidence, 2026-10-12: guarded full suite passes 230 tests in
+578.29s; 24 focused v2 checks pass. Lint and
 dependencies pass; all 194 real context captures are verified. The expired
 source attempt remains UNKNOWN with a separate complete-capture reconciliation
-receipt. News enrichment is running; real v2 training/results are not yet
+receipt. Complete expired sentiment captures have separately verified child
+receipts; original UNKNOWN attempts stay held. AC is independently verified
+online after user confirmation. R8 resumes news enrichment; real v2 training/results are not yet
 complete. See [RESEARCH_V2](RESEARCH_V2.md). No promotion gate is closed.
 
 Earlier v2 software evidence, 2026-10-12: enriched/weighted research CLI, source

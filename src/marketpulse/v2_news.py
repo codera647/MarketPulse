@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import math
 import re
 from datetime import date
@@ -9,19 +10,29 @@ from pathlib import Path
 
 from marketpulse.clock import parse_time, session_window
 from marketpulse.preprocessing import clean_financial_text
-from marketpulse.storage import RawStore, digest
-from marketpulse.v2_runtime import check_receipt, supervised
+from marketpulse.storage import RawStore, canonical_bytes, digest
+from marketpulse.v2_runtime import (
+    check_receipt,
+    environment,
+    reconciliation_store,
+    retained_expired,
+    supervised,
+)
 
 FINBERT_REPO = "ProsusAI/finbert"
 FINBERT_REVISION = "0bc2ac10dda6929bcb1f77ccc43c7ec5c424f031"
-NEWS_VERSION = "financial-news-meaning/2"
+NEWS_VERSION = "financial-news-meaning/4"
 MODEL_SPEC = {
     "repo": FINBERT_REPO,
     "revision": FINBERT_REVISION,
     "max_tokens": 96,
-    "batch_size": 16,
+    "batch_size": 64,
     "cpu_threads": 2,
     "dtype": "float32",
+    "input_text": "cleaned_headline_only",
+    "batch_order": "clipped_word_count_then_digest",
+    "event_text": "cleaned_headline_and_summary",
+    "blank_headline_policy": "exclude_sentiment_keep_events",
     "weights_license": "CC-BY-NC-SA-4.0",
     "commercial_use_authorized": False,
     "historical_corpus_date_audit": "INCOMPLETE",
@@ -55,6 +66,11 @@ def article_text(article: dict) -> str:
             ),
         )
     )
+
+
+def sentiment_text(article: dict) -> str:
+    """Headline sentiment is separate from full-text TF-IDF/event information."""
+    return clean_financial_text(article["headline"])
 
 
 class FinbertEngine:
@@ -105,6 +121,112 @@ class FinbertEngine:
         ]
 
 
+def reconcile_sentiment(
+    root: Path, parent_key: str, sentiment_hash: str, *, evidence: str, engine_factory=FinbertEngine
+) -> dict:
+    """Explicit independent verification of a complete saved expired inference batch."""
+    if not isinstance(evidence, str) or not 1 <= len(evidence.strip()) <= 500:
+        raise ValueError("bounded independent sentiment reconciliation evidence required")
+    job, _record, original = retained_expired(root, parent_key, "sentiment")
+    store, index = RawStore(root / "artifacts"), reconciliation_store(root)
+    inputs = store.get(original["input_hash"])
+    chunk = inputs["texts"]
+    if (
+        inputs["spec"] != MODEL_SPEC
+        or original["spec_hash"] != digest(MODEL_SPEC)
+        or not 1 <= len(chunk) <= MODEL_SPEC["batch_size"]
+        or len({key for key, text in chunk}) != len(chunk)
+        or any(not text or digest({"text": text, "spec": MODEL_SPEC}) != key for key, text in chunk)
+    ):
+        raise ValueError("expired sentiment input/spec binding differs")
+
+    def validate_saved(result):
+        if result["sentiment_hash"] != sentiment_hash:
+            raise ValueError("reconciled sentiment identity differs")
+        saved = store.get(sentiment_hash)
+        if saved["input_hash"] != original["input_hash"] or set(saved["scores"]) != {
+            key for key, text in chunk
+        }:
+            raise ValueError("candidate sentiment capture is incomplete or mismatched")
+        for score in saved["scores"].values():
+            validate_sentiment(score)
+        return saved
+
+    validate_saved({"sentiment_hash": sentiment_hash})
+    engine = None
+
+    def verify(result):
+        nonlocal engine
+        retained_expired(root, parent_key, "sentiment")
+        saved = validate_saved(result)
+        if engine is None:
+            engine = engine_factory(root)
+        sample = [chunk[0]] if len(chunk) == 1 else [chunk[0], chunk[-1]]
+        replay = engine.score([text for key, text in sample])
+        if len(replay) != len(sample):
+            raise ValueError("sentiment independent sample count differs")
+        for (key, text), score in zip(sample, replay):
+            validate_sentiment(score)
+            actual = saved["scores"][key]
+            if score["truncated"] != actual["truncated"] or any(
+                not math.isclose(
+                    score["probabilities"][name], actual["probabilities"][name], abs_tol=1e-5
+                )
+                for name in score["probabilities"]
+            ):
+                raise ValueError("sentiment independent sampled replay differs")
+
+    binding = {
+        "parent_job_key": parent_key,
+        "parent_run_id": job["run_id"],
+        "original_input_hash": original["input_hash"],
+        "sentiment_hash": sentiment_hash,
+        "evidence": evidence,
+        "original_authority_reset": False,
+        "original_adapter_reexecuted": False,
+    }
+    result = supervised(
+        root,
+        "sentiment_reconciliation",
+        binding,
+        lambda: {
+            "sentiment_hash": sentiment_hash,
+            "original_held_run": job["run_id"],
+            "original_adapter_reexecuted": False,
+        },
+        verify,
+    )
+    with index.connect() as db:
+        prior = db.execute(
+            "SELECT result_json FROM v2_capture_reconciliations WHERE parent_job_key=?",
+            (parent_key,),
+        ).fetchone()
+        if prior and json.loads(prior[0]) != result:
+            raise ValueError("sentiment reconciliation already bound to different evidence")
+        db.execute(
+            "INSERT OR IGNORE INTO v2_capture_reconciliations VALUES (?,?)",
+            (parent_key, canonical_bytes(result).decode()),
+        )
+    return result
+
+
+def reconciled_sentiment(root: Path, binding: dict) -> dict | None:
+    key = digest({"stage": "sentiment", "binding": {**binding, "environment": environment()}})
+    with reconciliation_store(root).connect() as db:
+        row = db.execute(
+            "SELECT result_json FROM v2_capture_reconciliations WHERE parent_job_key=?", (key,)
+        ).fetchone()
+    if row is None:
+        return None
+    result = json.loads(row[0])
+    check_receipt(root, result)
+    retained_expired(root, key, "sentiment")
+    saved = RawStore(root / "artifacts").get(result["sentiment_hash"])
+    if saved["input_hash"] != binding["input_hash"] or binding["spec_hash"] != digest(MODEL_SPEC):
+        raise ValueError("sentiment reconciliation input/spec mismatch")
+    return result
+
+
 def validate_sentiment(value: dict) -> None:
     scores = value["probabilities"]
     if (
@@ -126,12 +248,17 @@ def sentiment_inputs(rows: list[dict]) -> dict[str, str]:
     texts = {}
     for row in rows:
         for article in row["news"]:
-            text = article_text(article)
+            text = sentiment_text(article)
             if text:
                 texts[digest({"text": text, "spec": MODEL_SPEC})] = text
     if len(texts) > 200000:
         raise ValueError("sentiment document count exceeds research bound")
-    return dict(sorted(texts.items()))
+    return dict(
+        sorted(
+            texts.items(),
+            key=lambda item: (min(MODEL_SPEC["max_tokens"], len(item[1].split())), item[0]),
+        )
+    )
 
 
 def capture_sentiment(root: Path, rows: list[dict], checkpoint, *, engine_factory=FinbertEngine):
@@ -193,11 +320,12 @@ def capture_sentiment(root: Path, rows: list[dict], checkpoint, *, engine_factor
                 ):
                     raise ValueError("sentiment sampled inference replay mismatch")
 
+        binding = {"input_hash": input_hash, "spec_hash": digest(MODEL_SPEC)}
         results.append(
-            supervised(
+            reconciled_sentiment(root, binding) or supervised(
                 root,
                 "sentiment",
-                {"input_hash": input_hash, "spec_hash": digest(MODEL_SPEC)},
+                binding,
                 execute,
                 verify,
                 lease=300,
@@ -244,6 +372,7 @@ def news_values(row: dict, sentiments: dict) -> dict:
         if not window.previous_close < created <= updated <= window.cutoff:
             raise ValueError("v2 news crosses the cutoff/version boundary")
         text = article_text(article)
+        headline_text = sentiment_text(article)
         if not text:
             continue
         headline = clean_financial_text(article["headline"]).lower()
@@ -259,17 +388,19 @@ def news_values(row: dict, sentiments: dict) -> dict:
             tags = article.get("symbols", [])
         if symbol not in tags:
             raise ValueError("v2 news lacks the target's source entity tag")
+        for name, pattern in EVENTS.items():
+            values[f"news_event_{name}"] += int(bool(re.search(pattern, text, re.I)))
+        if not headline_text:
+            continue
         weight = 1.0 if direct else 1 / max(len(tags), 1)
         age = (window.cutoff - updated).total_seconds() / 3600
         recency_weight = weight / (1 + age / 12)
-        score = sentiments[digest({"text": text, "spec": MODEL_SPEC})]
+        score = sentiments[digest({"text": headline_text, "spec": MODEL_SPEC})]
         validate_sentiment(score)
         weighted.append((recency_weight, score["probabilities"]))
         ages.append(age)
         relevance.append(weight)
         truncated += int(score["truncated"])
-        for name, pattern in EVENTS.items():
-            values[f"news_event_{name}"] += int(bool(re.search(pattern, text, re.I)))
     denominator = sum(weight for weight, score in weighted)
     for name in ("positive", "negative", "neutral"):
         values[f"news_sentiment_{name}"] = (

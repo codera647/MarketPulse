@@ -176,6 +176,12 @@ def main(argv: list[str] | None = None) -> int:
     v2_reconcile.add_argument("--parent-job-key", required=True)
     v2_reconcile.add_argument("--capture-hash", required=True)
     v2_reconcile.add_argument("--evidence", required=True)
+    v2_sentiment_reconcile = commands.add_parser(
+        "research-v2-reconcile-sentiment", help="verify saved batch; retain expired UNKNOWN")
+    v2_sentiment_reconcile.add_argument("--data-dir", required=True, type=Path)
+    v2_sentiment_reconcile.add_argument("--parent-job-key", required=True)
+    v2_sentiment_reconcile.add_argument("--sentiment-hash", required=True)
+    v2_sentiment_reconcile.add_argument("--evidence", required=True)
     full_demo = commands.add_parser("demo-init", help="build the full credential-free fixture demo")
     full_demo.add_argument("--data-dir", type=Path, default=Path("data/demo"))
     full_demo.add_argument("--seed", type=int, default=42)
@@ -200,7 +206,8 @@ def main(argv: list[str] | None = None) -> int:
     restore.add_argument("--manifest-hash", required=True)
     arguments = parser.parse_args(argv)
 
-    if arguments.command in {"research-v2-build", "research-v2-predict", "research-v2-reconcile"}:
+    if arguments.command in {"research-v2-build", "research-v2-predict", "research-v2-reconcile",
+                              "research-v2-reconcile-sentiment"}:
         from marketpulse.v2_pipeline import build_v2, predict_v2
 
         try:
@@ -214,11 +221,19 @@ def main(argv: list[str] | None = None) -> int:
             elif arguments.command == "research-v2-predict":
                 result = predict_v2(
                     arguments.data_dir, arguments.release_hash, arguments.input_hash)
-            else:
+            elif arguments.command == "research-v2-reconcile":
                 from marketpulse.v2_sources import reconcile_capture
 
                 result = reconcile_capture(arguments.data_dir, arguments.parent_job_key,
                                            arguments.capture_hash, evidence=arguments.evidence)
+            else:
+                from marketpulse.v2_news import reconcile_sentiment
+                from marketpulse.v2_runtime import system_awake
+
+                with system_awake():
+                    result = reconcile_sentiment(arguments.data_dir, arguments.parent_job_key,
+                                                 arguments.sentiment_hash,
+                                                 evidence=arguments.evidence)
             print(json.dumps(result, indent=2, sort_keys=True))
             return 0
         except Exception as error:

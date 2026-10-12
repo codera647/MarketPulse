@@ -28,6 +28,10 @@ from marketpulse.v2_news import (
     capture_sentiment,
     load_sentiment,
     news_values,
+    reconcile_sentiment,
+    reconciled_sentiment,
+    sentiment_inputs,
+    sentiment_text,
     validate_sentiment,
 )
 from marketpulse.v2_pipeline import build_features, predict_v2, train_v2
@@ -146,7 +150,7 @@ def test_premarket_dst_boundary_and_unknown_empty(session, last_stamp):
 
 def test_news_meaning_is_not_price_or_calendar_truth():
     row = base_row()
-    cache = {digest({"text": article_text(row["news"][0]), "spec": MODEL_SPEC}): sentiment()}
+    cache = {digest({"text": sentiment_text(row["news"][0]), "spec": MODEL_SPEC}): sentiment()}
     value = news_values(row, cache)
     assert value["news_sentiment_positive"] == pytest.approx(0.8)
     assert value["news_event_guidance"] == 1 and value["news_event_earnings"] == 1
@@ -162,6 +166,31 @@ def test_news_meaning_is_not_price_or_calendar_truth():
         validate_sentiment(
             {"probabilities": {"positive": 1, "negative": 1, "neutral": 1}, "truncated": False}
         )
+
+
+def test_headline_sentiment_keeps_full_summary_events_and_versioned_buckets():
+    row = base_row(news=[article(headline="<b>Apple does not cut guidance by 12%</b>")])
+    heading = sentiment_text(row["news"][0])
+    assert "not" in heading and "12%" in heading
+    inputs = sentiment_inputs([row])
+    changed = deepcopy(row)
+    changed["news"][0]["summary"] = "Quarterly earnings rise; a lawsuit is filed."
+    assert article_text(row["news"][0]) != article_text(changed["news"][0])
+    assert sentiment_inputs([changed]) == inputs
+    assert MODEL_SPEC["input_text"] == "cleaned_headline_only"
+    cache = {digest({"text": heading, "spec": MODEL_SPEC}): sentiment()}
+    values = news_values(changed, cache)
+    assert values["news_event_legal"] == 1 and values["news_event_earnings"] == 1
+    long = base_row(news=[article(headline="Apple " + "revenue " * 50)])
+    short = base_row(news=[article(headline="Apple earnings")])
+    bucketed = sentiment_inputs([long, row, short])
+    assert bucketed == sentiment_inputs([short, row, long])
+    lengths = [len(text.split()) for text in bucketed.values()]
+    assert lengths == sorted(lengths)
+    assert sentiment_inputs([base_row(news=[article(headline="<b></b>")])]) == {}
+    missing = news_values(base_row(news=[article(headline="<b></b>")]), {})
+    assert missing["news_meaning_missing"] == 1 and missing["news_sentiment_positive"] is None
+    assert missing["news_event_earnings"] == 1
 
 
 def test_masking_shared_first_date_then_later_inputs():
@@ -240,6 +269,19 @@ def test_sentiment_cache_native_receipts_and_resumability(tmp_path):
     assert len(cache) == 1 and result["documents"] == 1
     again = capture_sentiment(tmp_path, rows, lambda event: None, engine_factory=FakeSentiment)
     assert again == result
+
+
+def test_bounded_sentiment_batches_cover_every_document(tmp_path):
+    total = MODEL_SPEC["batch_size"] * 2 + 1
+    row = base_row(
+        news=[article(headline=f"Apple reports earnings item {i}") for i in range(total)]
+    )
+    progress = []
+    result = capture_sentiment(tmp_path, [row], progress.append, engine_factory=FakeSentiment)
+    manifest = RawStore(tmp_path / "artifacts").get(result["manifest_hash"])
+    assert len(manifest["batches"]) == 3
+    assert len(load_sentiment(tmp_path, result["manifest_hash"])) == total
+    assert [event["documents_complete"] for event in progress] == [0, 64, 128]
 
 
 def model_rows():
@@ -522,3 +564,152 @@ def test_expired_capture_reconciliation_never_resets_or_refetches(tmp_path):
         )
         == result
     )
+
+
+def test_status_atomic_replace_retries_transient_windows_reader(tmp_path, monkeypatch):
+    from pathlib import Path
+
+    from marketpulse import v2_runtime
+
+    original, calls, waits = Path.replace, [], []
+
+    def temporarily_locked(source, target):
+        calls.append(target)
+        if len(calls) <= 2:
+            raise PermissionError("Synthetic Windows sharing violation")
+        return original(source, target)
+
+    monkeypatch.setattr(Path, "replace", temporarily_locked)
+    monkeypatch.setattr(v2_runtime.time, "sleep", waits.append)
+    with owned_run(tmp_path, {"test": "status-only"}) as checkpoint:
+        checkpoint({"stage": "COMPLETE"})
+    assert len(calls) == 4 and waits == [0.05, 0.05]
+    assert json.loads((tmp_path / "v2-status.json").read_text())["stage"] == "COMPLETE"
+    assert not (tmp_path / "v2-build.lock").exists()
+
+
+def test_status_replace_permanent_denial_is_bounded_not_hidden(tmp_path, monkeypatch):
+    from pathlib import Path
+
+    from marketpulse import v2_runtime
+
+    attempts = []
+
+    def denied(source, target):
+        attempts.append(1)
+        raise PermissionError("Synthetic permanent sharing violation")
+
+    monkeypatch.setattr(Path, "replace", denied)
+    monkeypatch.setattr(v2_runtime.time, "sleep", lambda duration: None)
+    with pytest.raises(PermissionError):
+        with owned_run(tmp_path, {"test": "status-only"}):
+            pytest.fail("The run must not start with an unwritable status file")
+    assert len(attempts) == 80  # initial status + explicit STOPPED, both bounded
+    assert not (tmp_path / "v2-build.lock").exists()
+
+
+def test_temporary_windows_idle_sleep_guard_restores_prior_state_on_error():
+    from marketpulse.v2_runtime import system_awake
+
+    calls = []
+
+    def request(flags):
+        calls.append(flags)
+        return 0x80000000
+
+    with pytest.raises(ValueError, match="Synthetic"):
+        with system_awake(request):
+            raise ValueError("Synthetic work failure")
+    assert calls == [0x80000001, 0x80000000]
+    assert all(not flags & 0x42 for flags in calls)  # no DISPLAY or AWAYMODE
+    with pytest.raises(OSError, match="refused"):
+        with system_awake(lambda flags: 0):
+            pytest.fail("Work must not start after a refused guard")
+
+
+def test_unstarted_source_reconciliation_never_invokes_original_adapters(tmp_path):
+    from trailforge.ports import AdapterCapabilities, FunctionAdapter
+    from trailforge.runtime import Goal, Harness, Task
+
+    from marketpulse.storage import ExtractionStore
+    from marketpulse.v2_runtime import environment
+
+    query = month_queries(date(2025, 7, 1), date(2025, 7, 3))[0]
+    binding = {**query, "environment": environment()}
+    key = digest({"stage": "context", "binding": binding})
+    resource = f"marketpulse:v2:{key}"
+    calls = []
+    names = ("marketpulse.v2_context/2", "marketpulse.v2_context_verify/2")
+    goal = Goal(
+        "local-demo", resource, "Verify bounded private v2 research work",
+        (Task("execute", names[0], binding), Task("verify", names[1], binding, ("execute",))),
+        ("verify",), allowed_effects=("PURE", "CANDIDATE_WRITE"), budget_units=4,
+    )
+    harness = Harness(
+        tmp_path / "v2-trailforge.sqlite3", tenant_id="local-demo", resource_id=resource,
+        adapters=[
+            FunctionAdapter(AdapterCapabilities(names[0], "TOOL", "CANDIDATE_WRITE"),
+                            lambda request: calls.append("execute")),
+            FunctionAdapter(AdapterCapabilities(names[1], "VERIFY", "PURE"),
+                            lambda request: calls.append("verify")),
+        ], tenant_limit=1000000, global_limit=10000000,
+    )
+    index = ExtractionStore(tmp_path / "v2-jobs.sqlite3")
+    index.reserve_job(key, "HISTORICAL_APPROXIMATE")
+    run_id = harness.start(goal)
+    index.set_run_id(key, run_id)
+    candidate = RawStore(tmp_path / "artifacts").put({"query": query, "pages": [], "records": 0})
+    with pytest.raises(ValueError, match="expired"):
+        reconcile_capture(tmp_path, key, candidate, evidence="Synthetic unstarted capture")
+    record = harness.inspect(run_id)
+    assert calls == [] and record["units_reserved"] == 0
+    assert record["tasks"]["execute"]["attempts"] == 0
+
+
+def test_expired_sentiment_capture_reconciles_without_original_retry(tmp_path):
+    import time
+
+    from trailforge.core import ConflictError
+    from trailforge.runtime import Harness
+
+    from marketpulse.storage import ExtractionStore
+    from marketpulse.v2_runtime import environment
+
+    store = RawStore(tmp_path / "artifacts")
+    texts = list(sentiment_inputs([base_row()]).items())
+    input_hash = store.put({"texts": texts, "spec": MODEL_SPEC})
+    binding = {"input_hash": input_hash, "spec_hash": digest(MODEL_SPEC)}
+    sentiment_hash = store.put(
+        {"input_hash": input_hash, "scores": {key: sentiment() for key, text in texts}}
+    )
+    original_calls = []
+
+    def expire():
+        original_calls.append(1)
+        time.sleep(0.02)
+        return {"sentiment_hash": sentiment_hash}
+
+    with pytest.raises(ConflictError):
+        supervised(tmp_path, "sentiment", binding, expire, lambda result: None, lease=0.001)
+    key = digest({"stage": "sentiment", "binding": {**binding, "environment": environment()}})
+    malformed = store.put({"input_hash": input_hash, "scores": {}})
+    with pytest.raises(ValueError, match="incomplete"):
+        reconcile_sentiment(tmp_path, key, malformed, evidence="Synthetic check")
+    result = reconcile_sentiment(
+        tmp_path, key, sentiment_hash, evidence="Synthetic check", engine_factory=FakeSentiment
+    )
+    check_receipt(tmp_path, result)
+    assert reconciled_sentiment(tmp_path, binding) == result and original_calls == [1]
+    completed = capture_sentiment(
+        tmp_path, [base_row()], lambda event: None, engine_factory=FakeSentiment
+    )
+    assert len(load_sentiment(tmp_path, completed["manifest_hash"])) == 1
+    job = ExtractionStore(tmp_path / "v2-jobs.sqlite3").get_job(key)
+    record = Harness(
+        tmp_path / "v2-trailforge.sqlite3", tenant_id="local-demo",
+        resource_id=f"marketpulse:v2:{key}", adapters=[],
+        tenant_limit=1000000, global_limit=10000000,
+    ).inspect(job["run_id"])
+    assert record["state"] == "WAITING_HUMAN"
+    assert record["tasks"]["execute"]["status"] == "UNKNOWN"
+    assert record["tasks"]["execute"]["attempts"] == 1 and record["units_reserved"] == 1
