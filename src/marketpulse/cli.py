@@ -154,6 +154,11 @@ def main(argv: list[str] | None = None) -> int:
     real_predict.add_argument("--release-hash", required=True)
     real_predict.add_argument("--symbol", required=True)
     real_predict.add_argument("--session", required=True, type=date.fromisoformat)
+    real_evaluate = commands.add_parser(
+        "research-evaluate", help="open the frozen held-out research test; never refit/reselect")
+    real_evaluate.add_argument("--data-dir", required=True, type=Path)
+    real_evaluate.add_argument("--release-hash", required=True)
+    real_evaluate.add_argument("--authorization-evidence", required=True)
     full_demo = commands.add_parser("demo-init", help="build the full credential-free fixture demo")
     full_demo.add_argument("--data-dir", type=Path, default=Path("data/demo"))
     full_demo.add_argument("--seed", type=int, default=42)
@@ -177,6 +182,23 @@ def main(argv: list[str] | None = None) -> int:
     restore.add_argument("--destination", type=Path, required=True)
     restore.add_argument("--manifest-hash", required=True)
     arguments = parser.parse_args(argv)
+
+    if arguments.command == "research-evaluate":
+        from marketpulse.real_evaluation import evaluate_real_research
+
+        try:
+            result = evaluate_real_research(
+                arguments.data_dir, arguments.release_hash,
+                evidence=arguments.authorization_evidence,
+                progress=lambda event: print(json.dumps(event, sort_keys=True),
+                                            file=sys.stderr, flush=True))
+        except Exception as error:
+            print(f"research test refused or failed: {type(error).__name__}; "
+                  "inspect private test status; no source payloads or credentials logged",
+                  file=sys.stderr)
+            return 2
+        print(json.dumps(result, sort_keys=True, indent=2))
+        return 0 if result["state"] == "COMPLETE" else 1
 
     if arguments.command == "research-build":
         from marketpulse.real_build import build_real_research

@@ -307,13 +307,15 @@ def train_real_models(data_dir: Path, contract: dict, authorization: dict, *,
     return {"state": "COMPLETE", "release_hash": release_hash, **release}
 
 
-def predict_real_research(data_dir: Path, release_hash: str, symbol: str, session: str) -> dict:
+def load_research_release(data_dir: Path, release_hash: str) -> dict:
+    """Check a saved release's fitting authority without reading any market outcomes."""
     artifacts = RawStore(data_dir / "research-models")
     release = artifacts.get(release_hash)
     if (release.get("schema") != RESEARCH_VERSION or release.get("deployment_promoted") is not False
             or release.get("paper_action_authorized") is not False
-            or symbol not in release["contract"]["symbols"]):
-        raise ValueError("incompatible research release or ticker")
+            or release.get("availability_tier") != "HISTORICAL_APPROXIMATE"
+            or release.get("selected_model") not in MODEL_NAMES):
+        raise ValueError("incompatible research release")
     binding = release["binding"]
     key = digest(binding)
     harness = Harness(data_dir / "research-model-trailforge.sqlite3", tenant_id="local-demo",
@@ -343,6 +345,20 @@ def predict_real_research(data_dir: Path, release_hash: str, symbol: str, sessio
                 or any(manifest["calibration_rows"] != value["row_hashes"]
                        for value in candidate["calibrators"].values())):
             raise ValueError("research model calibration/evaluation roster mismatch")
+    evaluation = artifacts.get(release["validation_report_hash"])
+    selected = min(MODEL_NAMES, key=lambda name: (-evaluation["metrics"][name]["macro_f1"],
+                                                evaluation["metrics"][name]["log_loss"], name))
+    if (evaluation["model_hash"] != release["model_hash"]
+            or selected != release["selected_model"]):
+        raise ValueError("release selection differs from frozen validation selection")
+    return release
+
+
+def predict_real_research(data_dir: Path, release_hash: str, symbol: str, session: str) -> dict:
+    artifacts = RawStore(data_dir / "research-models")
+    release = load_research_release(data_dir, release_hash)
+    if symbol not in release["contract"]["symbols"]:
+        raise ValueError("incompatible research ticker")
     pipeline = saved_pipeline(data_dir)
     with pipeline.store.connect() as db:
         found = db.execute(

@@ -337,6 +337,11 @@ def metrics(labels: list[str], probabilities: list[list[float]]) -> dict:
 
 
 def evaluate_comparison(model: dict, rows: list[dict], *, split: str) -> dict:
+    _check_evaluation_rows(model, rows, split)
+    return summarize_comparison(model, rows, chronological_scores(model, rows), split=split)
+
+
+def _check_evaluation_rows(model: dict, rows: list[dict], split: str) -> None:
     if (
         not rows
         or split not in {"validation", "test"}
@@ -347,7 +352,13 @@ def evaluate_comparison(model: dict, rows: list[dict], *, split: str) -> dict:
     used.update(model["calibrators"]["combined"]["row_hashes"])
     if used & {row["row_hash"] for row in rows}:
         raise ValueError("evaluation overlaps fit/calibration rows")
-    scores = chronological_scores(model, rows)
+
+
+def summarize_comparison(model: dict, rows: list[dict], scores: list[dict], *, split: str) -> dict:
+    """Calculate metrics from already-committed probabilities, without fitting/scoring."""
+    _check_evaluation_rows(model, rows, split)
+    if len(scores) != len(rows) or any(set(item) != set(MODEL_NAMES) for item in scores):
+        raise ValueError("evaluation needs one matched probability set per row")
     results = {
         name: metrics([row["label"] for row in rows], [item[name] for item in scores])
         for name in MODEL_NAMES

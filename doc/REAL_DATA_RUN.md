@@ -1,8 +1,17 @@
 # Real-data research run — 2026-10-12
 
-Latest status: collection and full dataset audit completed; repaired training
-resumed on 2026-10-12 at 10:51 UTC. Saved-input verification is in progress;
-no completed real model or evaluation result is claimed yet.
+Latest status: collection/audit and real training completed. Training finished
+at 2026-10-12 11:10:25 UTC (16:10 Pakistan) with matching Trailforge COMPLETED/PASS
+and saved artifacts. All four models are saved: 10,458 training rows, 744
+calibration rows, 744 model-selection rows; text_only was selected by validation
+macro-F1. The frozen 2026 held-out test also completed at 12:15:59 UTC
+(17:15:59 Pakistan), verified COMPLETED/PASS. See [FINAL_TEST](FINAL_TEST.md) for
+1,104 examples / 184 dates, all measured metrics and immutable evidence.
+The selected text model scored 49.82% accuracy versus majority 51.72%, with
+very low UP/DOWN recall. Selection was not changed; no refitting occurred.
+Paper actions and deployment remain unauthorized. Software verification now
+passes 206 tests, lint and dependency checks. The current UI remains FIXTURE-only.
+Earlier dated running statuses below are historical evidence.
 
 ## Completed collection and training-size repair
 

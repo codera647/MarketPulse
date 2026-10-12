@@ -1,5 +1,13 @@
 # GitHub delivery milestones
 
+Latest completed 2026-10-12 research step: training and the frozen held-out test
+are verified COMPLETED/PASS. Test covers 1,104 examples / 184 complete dates;
+selected text model accuracy is 49.82% versus majority 51.72%, with poor UP/DOWN
+recall. All four models and results are saved; no test-driven reselection/refit.
+206 tests, lint and dependency checks pass. See [FINAL_TEST](FINAL_TEST.md).
+Human quality/policy/deployment promotion remains unverified; paper eligibility
+is explicitly false. Earlier running statuses below are dated snapshots.
+
 Latest 2026-10-12 evidence: real collection/audit now has 13,056 accepted rows
 and 20 excluded whole-date groups. The training-size integration fix and an
 offline resume are implemented; saved-input verification is running. Human
@@ -33,9 +41,9 @@ exposed by the connector; Git pushed the existing local history normally.
 | [M00](https://github.com/codera647/MarketPulse/milestone/1) Repository and delivery workflow | Private GitHub repository and nine milestones exist; initial push succeeds; CI is configured; committed content credential scan passed for 41 files | Complete; closed on GitHub after evidence push |
 | [M01](https://github.com/codera647/MarketPulse/milestone/2) Extraction and feature foundation | Trailforge extraction/audit, versioned snapshots, provisional label and pre-open feature previews pass 25 fixture regression tests and lint; code pushed | Complete; closed on GitHub using fixture evidence, not live-data certification |
 | [M02](https://github.com/codera647/MarketPulse/milestone/3) Live data access and source audit | Safe dotenv loading, both historical feeds, 7/7 price coverage on four sessions, real pagination, dated source decisions/gaps, 51 tests and lint; see [audit](M02_SOURCE_AUDIT_2026-10-10.md) | Complete; closed after commit `02ac97b` was pushed and GitHub CI passed; rights/target gates remain open |
-| M03 Complete labeled historical dataset | Resumable collection, immutable rows, minute-proxy ledger and exact report-bound human promotion implemented; see [DATASET](DATASET.md) and [PIPELINE](PIPELINE.md) | Software implemented; real bulk dataset/quality review remain gated, not complete or closed |
-| M04 Majority and price baselines | Fixture and reviewed-data training, safe JSON scoring, matched validation and Trailforge verification implemented; final-test reads excluded; see [BASELINES](BASELINES.md) | Software implemented/tested synthetically; real validation blocked on promoted M03, not complete or closed |
-| M05 News models and calibrated evaluation | Fixture text/combined models, four matched ablations, separate calibration/policy dates, synthetic test report and limitations implemented | Fixture evidence only; real news extension/evaluation remains open |
+| M03 Complete labeled historical dataset | 13,056 real research rows, 20 excluded date groups, complete audited roster, raw duplicate evidence and authorized masking; see REAL_DATA_RUN | Real research collection complete; human corporate-action/semantic/point-in-time quality promotion remains open |
+| M04 Majority and price baselines | Real train-only fitting, immutable JSON models, 2025 calibration/selection and verified frozen 2026 evaluation; see FINAL_TEST | Real research evidence exists; human quality and deployment promotion remain open |
+| M05 News models and calibrated evaluation | Four real matched models, separated calibration/selection, 1,104-row held-out test, uncertainty, per-class/ticker metrics and explicit negative paper-eligibility decision; see FINAL_TEST | Research evaluation complete; human quality/policy/live admission requirements remain open, not closed |
 | M06 Trailforge decision and paper records | Fixture verified forecasts, immutable decisions/outcomes, duplicate/concurrency/restart recovery, simulated paper policy and injected expiry | Fixture software implemented; real-forward admission/expiry and market policy remain open |
 | [M07](https://github.com/codera647/MarketPulse/milestone/8) API and demonstration | Typed local API, replay/details/evaluation dashboard, explicit reveal and success/miss/abstain/blocked/hold cases; 170 tests and lint pass; loopback services healthy | Complete for the local FIXTURE demonstration; pushed as `9e73e3e` and closed on GitHub on 2026-10-11; not real-model certification |
 | M08 Release and handoff | Dependency snapshot, fixture regression/recovery checks, backup/restore and reproducible local guide | Fixture release candidate; real-data release remains open |

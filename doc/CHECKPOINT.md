@@ -1,5 +1,50 @@
 # MarketPulse checkpoint for the next agent
 
+## Latest completed held-out test — 2026-10-12
+
+The user asked to complete the next step after verified training. The real
+held-out test is COMPLETE at 12:15:59 UTC (17:15:59 Pakistan), with matching
+Trailforge COMPLETED/PASS, saved immutable predictions/report/test release,
+checkpoint/event checksums, receipt and application manifest. Model parameters,
+calibration and the validation-selected text_only candidate are unchanged.
+The 1,104 examples span 184 complete six-company dates, 2026-01-05–2026-09-30.
+See [FINAL_TEST](FINAL_TEST.md) for frozen identities, all metrics and limitations.
+
+Accuracy / macro-F1: majority 51.72% / .2273; price-only 51.54% / .2294;
+selected text-only 49.82% / .2927; combined 51.90% / .2978. Text-only is below
+the majority accuracy baseline and detects only 7.31% of DOWN and 5.86% of UP
+moves. Do not switch to combined or tune against the exposed test. Paper/trading
+eligibility is explicitly FALSE; quality/deployment/policy gates remain open.
+This is historical approximate retrospective evidence, not a pristine blind
+test or investment performance claim. Earlier source QA may overlap 2026.
+
+206 regression tests, lint and dependency checks pass. Private runtime status
+is `data/real-2018-2026/real-evaluation-status.json`; separate evaluation artifacts
+and SQLite ledgers preserve prediction-before-outcome evidence. No evaluation
+lock/process should be active after completion. Training status/release are not
+overwritten by this test. Source/data rights remain user attestation.
+
+Next product step: integrate the verified research results and chronological
+saved predictions into the dashboard. The current UI is still FIXTURE-only;
+do not claim that this evaluation promoted it or authorized broker orders.
+All running/pending statements below are historical dated snapshots.
+
+## Latest training completion and test stage — 2026-10-12
+
+Training completed at 11:10:25 UTC (16:10 Pakistan). All four real comparison
+models are saved; Trailforge COMPLETED/PASS and matching artifacts/receipts/job
+were checked. Train rows: 10,458; calibration: 744; selection: 744. Frozen
+selection is text_only by validation macro-F1, not highest validation accuracy.
+See [FINAL_TEST](FINAL_TEST.md) for release/model hashes and the preregistered
+held-out evaluation. All earlier running-training snapshots below are historical.
+
+The user asked to complete the next step, authorizing offline held-out testing
+of this frozen release. The new research-evaluate path commits input-only
+predictions before opening outcomes, verifies label lineage and metrics, and
+keeps model parameters/selection unchanged. There are 1,104 usable test rows
+across 184 complete dates, 2026-01-05 through 2026-09-30. Real final-test results
+are not claimed until the new evaluator completes with typed verification PASS.
+
 ## Latest repair and resume — 2026-10-12
 
 Collection is now complete: 13,056 accepted rows through 2026-09-30, with
