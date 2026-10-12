@@ -208,13 +208,17 @@ def main(argv: list[str] | None = None) -> int:
         from marketpulse.real_training import (
             load_training_authorization,
             predict_real_research,
-            train_real_models,
         )
 
         try:
             if arguments.command == "research-train":
-                result = train_real_models(arguments.data_dir, load_contract(arguments.contract),
-                                           load_training_authorization(arguments.authorization))
+                from marketpulse.real_build import resume_real_training
+
+                result = resume_real_training(
+                    arguments.data_dir, load_contract(arguments.contract),
+                    load_training_authorization(arguments.authorization),
+                    progress=lambda event: print(json.dumps(event, sort_keys=True),
+                                                file=sys.stderr, flush=True))
             else:
                 result = predict_real_research(arguments.data_dir, arguments.release_hash,
                                                arguments.symbol, arguments.session.isoformat())

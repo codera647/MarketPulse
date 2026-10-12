@@ -1,5 +1,11 @@
 # GitHub delivery milestones
 
+Latest 2026-10-12 evidence: real collection/audit now has 13,056 accepted rows
+and 20 excluded whole-date groups. The training-size integration fix and an
+offline resume are implemented; saved-input verification is running. Human
+quality review, actual model results and release criteria remain unverified.
+See [REAL_DATA_RUN](REAL_DATA_RUN.md); no additional milestone is closed yet.
+
 2026-10-12 update: user-confirmed data rights now permit the larger private real
 collection, and the user approved verified whole-date coverage exclusions.
 Four-model research-only training and a completion runner are implemented;

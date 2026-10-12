@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from copy import deepcopy
+from hashlib import sha256
 from pathlib import Path
 
 import pytest
@@ -19,10 +20,46 @@ from marketpulse.real_training import (
     load_training_authorization,
     predict_real_research,
     train_real_models,
+    training_roster,
+    validate_training_roster,
     validation_segments,
 )
 from marketpulse.research import collect_dataset, collection_plan, saved_pipeline
 from marketpulse.storage import RawStore
+
+
+def test_full_size_roster_fits_default_harness_limit(tmp_path):
+    from trailforge.core import ContractError
+    from trailforge.ports import bounded_json
+
+    # Actual experiment has 744 calibration + 744 selection rows. Also exercise
+    # a larger roster without collecting fake market data or fitting a model.
+    rows = [{"row_hash": sha256(str(i).encode()).hexdigest()} for i in range(1800)]
+    calibration, selection = rows[:900], rows[900:]
+    inline = {"calibration_rows": [r["row_hash"] for r in calibration],
+              "selection_rows": [r["row_hash"] for r in selection]}
+    with pytest.raises(ContractError):
+        bounded_json(inline, 65536)
+    artifacts = RawStore(tmp_path)
+    binding = training_roster(artifacts, calibration, selection)
+    assert bounded_json(binding, 65536) == binding
+    manifest = validate_training_roster(artifacts, binding)
+    assert manifest["calibration_rows"] == inline["calibration_rows"]
+    assert manifest["selection_rows"] == inline["selection_rows"]
+    with pytest.raises(ValueError, match="count"):
+        validate_training_roster(artifacts, {**binding, "calibration_row_count": 1})
+    path = artifacts.root / binding["roster_manifest_hash"][:2] / (
+        binding["roster_manifest_hash"] + ".json")
+    path.write_text("{}", encoding="utf-8")
+    with pytest.raises(ValueError, match="digest"):
+        validate_training_roster(artifacts, binding)
+
+
+def test_training_roster_rejects_overlapping_segments(tmp_path):
+    rows = [{"row_hash": "a" * 64}]
+    artifacts = RawStore(tmp_path)
+    with pytest.raises(ValueError, match="overlap"):
+        validate_training_roster(artifacts, training_roster(artifacts, rows, rows))
 
 
 def test_text_cleaning_preserves_financial_meaning():

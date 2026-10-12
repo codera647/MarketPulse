@@ -1,5 +1,37 @@
 # MarketPulse checkpoint for the next agent
 
+## Latest repair and resume — 2026-10-12
+
+Collection is now complete: 13,056 accepted rows through 2026-09-30, with
+20 quarantined whole-date groups (120 excluded rows). The full audit has no
+missing required rows, lineage errors or batch failures. Its remaining strict
+raw warning is 115 cross-split exact-headline groups, eligible only for the
+user-approved masking research route. See [REAL_DATA_RUN](REAL_DATA_RUN.md).
+
+Initial training preparation stopped before fitting: 100,367-byte inline row
+rosters exceeded the Trailforge adapter's 65,536-byte default. The user asked
+to fix and resume. Complete ordered lists now live in an immutable private
+roster manifest, with only its digest/counts in task inputs. Default limits,
+dataset, labels, splits and model settings are unchanged. Previous failure
+evidence and the old pending no-run-ID job remain preserved.
+
+At 10:51 UTC the repaired hidden `research-train` task started, using the same
+saved report-bound authorization and no network collection. It reverifies
+11,952 train/validation rows before fitting; final-test artifacts stay sealed
+from fitting. Current status is `data/real-2018-2026/real-build-status.json`;
+NEW live logs are `real-training-resume.stderr.log` / `.stdout.log` in the same
+directory. The owned launcher was PID 14688 when started. An exclusive
+`research-training-resume.lock` belongs to this running resume: do not remove
+it or start a duplicate. Phase/row counts distinguish loading from fitting.
+
+Twenty focused training/masking/resume tests passed. The full regression suite
+passed 202 tests, with one upstream Starlette/httpx deprecation warning; lint
+and dependency checks passed. Eight staged paths had zero credential findings.
+At 10:57:57 UTC the active resume had verified 4,500 of 11,952 saved rows;
+owned launcher/child PIDs were 14688/13104. No trained real release is claimed yet.
+Check actual saved model/harness results before changing that statement. All
+dated collection-running statements below are historical snapshots.
+
 ## Latest override — 2026-10-12 real-data run
 
 The user explicitly confirmed data permissions, requested real dataset/model

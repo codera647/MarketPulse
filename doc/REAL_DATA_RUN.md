@@ -1,6 +1,58 @@
 # Real-data research run — 2026-10-12
 
-Status: real collection running; model fitting has not yet started.
+Latest status: collection and full dataset audit completed; repaired training
+resumed on 2026-10-12 at 10:51 UTC. Saved-input verification is in progress;
+no completed real model or evaluation result is claimed yet.
+
+## Completed collection and training-size repair
+
+Collection finished at 08:53 UTC through 2026-09-30. The final audit finished
+at 09:35 UTC: **13,056 accepted company-day rows**, from 13,176 planned, with
+20 whole-date exclusions (120 rows). The required roster has no missing rows,
+lineage errors or batch failures. The strict raw report remains
+INTEGRITY_BLOCKED solely for 115 cross-split exact-headline groups; there are
+zero cross-split provider IDs. Only the explicitly approved masked offline
+research route is eligible. This is not human deployment-quality approval.
+Final report: `60553e9ac07551ab14073255539799a9c27239ea11c4a8afed85237d81de5ff1`.
+
+The original training preparation stopped at 09:46 UTC with ContractError:
+the ordered calibration/selection lists made each adapter input 100,367 bytes,
+exceeding the default 65,536-byte bound. No fitting run ID or model existed;
+the old pending job and failure evidence are preserved, not reset.
+
+The repair stores complete ordered row lists in a private content-addressed
+`research-training-roster/1` manifest. Task inputs bind its SHA-256 digest and
+counts instead of embedding the full lists. Fit/evaluate/verify check the
+manifest against independently verified rows; saved inference checks it against
+the model calibration and evaluation rosters. Default Trailforge limits remain
+unchanged. A larger-than-current roster regression, tamper/count/disjointness
+checks, input-only saved inference and no-final-test-fit checks pass.
+No label, split, preprocessing or model-selection rule was changed.
+
+`research-train` now resumes offline with an exclusive local resume lock,
+archives the previous status, and writes phases and verified-row counts into
+the existing `real-build-status.json`. It neither recollects data nor reopens
+failed/unknown authority. The current resume uses the same report-bound user
+authorization and verifies **11,952 train/validation rows**; final-test artifacts
+remain excluded from fitting. The hidden launcher was PID 14688 when started;
+verify current ownership rather than reusing a PID blindly.
+
+Resume logs are `real-training-resume.stdout.log` and
+`real-training-resume.stderr.log` in `data/real-2018-2026`. Watch live progress:
+
+```powershell
+Get-Content -LiteralPath "F:\MarketPulse\data\real-2018-2026\real-training-resume.stderr.log" -Tail 10 -Wait
+```
+
+The focused training/masking/resume suite passed 20 tests. Full regression
+verification passed **202 tests**, with one upstream Starlette/httpx deprecation
+warning; lint and dependency checks passed. The staged eight-path credential
+scan found zero findings. At 10:57:57 UTC the resumed process had verified
+4,500 of 11,952 saved train/validation rows; its owned launcher/child were
+14688/13104. This is a dated progress snapshot, not completed fitting.
+Older dated progress
+snapshots below are retained as historical evidence, not current collection
+status. No empirical milestone is closed by this repair alone.
 
 The user confirmed data permissions and requested the complete real dataset and
 model training after requesting a larger historical dataset. Use the proposed

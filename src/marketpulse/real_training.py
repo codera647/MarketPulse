@@ -65,7 +65,7 @@ def research_report_ready(report: dict, *, mask_previous_stories: bool = False) 
                 and (report["status"] != "INTEGRITY_BLOCKED" or duplicates))
 
 
-def authorized_rows(pipeline, contract: dict, authorization: dict):
+def authorized_rows(pipeline, contract: dict, authorization: dict, *, progress=None):
     validate_contract(contract, require_approval=True)
     identity = frozen_identity(contract, pipeline)
     key = digest(identity)
@@ -103,6 +103,10 @@ def authorized_rows(pipeline, contract: dict, authorization: dict):
         raise ValueError("research row index differs from audited roster")
     rows = {"train": [], "validation": []}
     checked, outcomes = set(), {}
+    total = sum(entry["split"] != "test" for entry in report["rows"])
+    loaded = 0
+    if progress:
+        progress({"phase": "VERIFYING_SAVED_DATA", "verified_rows": 0, "rows_to_verify": total})
     for entry in report["rows"]:
         if entry["split"] == "test":
             continue  # Fitting/calibration/selection never load final-test row artifacts.
@@ -127,6 +131,10 @@ def authorized_rows(pipeline, contract: dict, authorization: dict):
         if row["label"] not in CLASSES:
             raise ValueError("invalid training label")
         rows[entry["split"]].append({**row, "row_hash": entry["row_hash"]})
+        loaded += 1
+        if progress and (loaded % 300 == 0 or loaded == total):
+            progress({"phase": "VERIFYING_SAVED_DATA", "verified_rows": loaded,
+                      "rows_to_verify": total})
     return rows["train"], rows["validation"], report
 
 
@@ -141,9 +149,39 @@ def validation_segments(rows: list[dict]) -> tuple[list[dict], list[dict]]:
             [row for row in rows if row["session"] in selection_dates])
 
 
-def train_real_models(data_dir: Path, contract: dict, authorization: dict) -> dict:
+def training_roster(artifacts: RawStore, calibration: list[dict], selection: list[dict]) -> dict:
+    """Keep ordered full rosters immutable, outside bounded adapter messages."""
+    manifest = {"schema": "research-training-roster/1",
+                "calibration_rows": [row["row_hash"] for row in calibration],
+                "selection_rows": [row["row_hash"] for row in selection]}
+    return {"roster_manifest_hash": artifacts.put(manifest),
+            "calibration_row_count": len(calibration), "selection_row_count": len(selection)}
+
+
+def validate_training_roster(artifacts: RawStore, binding: dict) -> dict:
+    manifest = artifacts.get(binding["roster_manifest_hash"])
+    if (not isinstance(manifest, dict) or set(manifest) != {
+            "schema", "calibration_rows", "selection_rows"}
+            or manifest["schema"] != "research-training-roster/1"):
+        raise ValueError("invalid training roster manifest")
+    for segment in ("calibration", "selection"):
+        hashes = manifest[f"{segment}_rows"]
+        if (not isinstance(hashes, list) or not hashes
+                or len(hashes) != binding[f"{segment}_row_count"]
+                or any(not isinstance(key, str) or len(key) != 64
+                       or any(char not in "0123456789abcdef" for char in key) for key in hashes)
+                or len(set(hashes)) != len(hashes)):
+            raise ValueError("training roster count or row identities changed")
+    if set(manifest["calibration_rows"]) & set(manifest["selection_rows"]):
+        raise ValueError("training roster segments overlap")
+    return manifest
+
+
+def train_real_models(data_dir: Path, contract: dict, authorization: dict, *,
+                      progress=None) -> dict:
     pipeline = saved_pipeline(data_dir)
-    train, validation, report = authorized_rows(pipeline, contract, authorization)
+    train, validation, report = authorized_rows(
+        pipeline, contract, authorization, progress=progress)
     calibration, selection = validation_segments(validation)
     artifacts = RawStore(data_dir / "research-models")
     report_hash = RawStore(data_dir / "datasets").put(report)
@@ -155,10 +193,15 @@ def train_real_models(data_dir: Path, contract: dict, authorization: dict) -> di
                "numpy_version": version("numpy"),
                "threadpoolctl_version": version("threadpoolctl"), "blas_threads": 2,
                "selection_rule": "validation_macro_f1_then_log_loss_then_name",
-               "calibration_rows": [row["row_hash"] for row in calibration],
-               "selection_rows": [row["row_hash"] for row in selection],
+               **training_roster(artifacts, calibration, selection),
                "final_test_released": False, "paper_action_authorized": False}
     key = digest(binding)
+
+    def check_roster():
+        manifest = validate_training_roster(artifacts, binding)
+        if (manifest["calibration_rows"] != [row["row_hash"] for row in calibration]
+                or manifest["selection_rows"] != [row["row_hash"] for row in selection]):
+            raise ValueError("training roster differs from verified saved rows")
 
     def fitted():
         # Bound CPU use and avoid BLAS oversubscription inside a finite harness lease.
@@ -174,15 +217,24 @@ def train_real_models(data_dir: Path, contract: dict, authorization: dict) -> di
             return model
 
     def fit(request):
+        check_roster()
+        if progress:
+            progress({"phase": "FITTING_MODELS", "train_rows": len(train)})
         return {"model_hash": artifacts.put(fitted())}
 
     def evaluate(request):
+        check_roster()
+        if progress:
+            progress({"phase": "EVALUATING_VALIDATION", "selection_rows": len(selection)})
         model = artifacts.get(request.dependencies["fit"]["model_hash"])
         evaluation = evaluate_comparison(model, selection, split="validation")
         return {"evaluation_hash": artifacts.put(evaluation)}
 
     def verify(request):
         try:
+            check_roster()
+            if progress:
+                progress({"phase": "VERIFYING_MODELS", "train_rows": len(train)})
             model = artifacts.get(request.dependencies["fit"]["model_hash"])
             evaluation = artifacts.get(request.dependencies["evaluate"]["evaluation_hash"])
             if model != fitted() or evaluation != evaluate_comparison(
@@ -281,6 +333,16 @@ def predict_real_research(data_dir: Path, release_hash: str, symbol: str, sessio
             or not job or job["status"] != "COMPLETE"
             or json.loads(job["manifest_json"]) != {"release_hash": release_hash}):
         raise ValueError("research release lacks compatible passing harness authority")
+    if "roster_manifest_hash" in binding:
+        # Legacy releases retain their original inline binding. New releases must
+        # retain the independently hash-checked manifest used by the fit/verifier.
+        manifest = validate_training_roster(artifacts, binding)
+        candidate = artifacts.get(release["model_hash"])
+        evaluation = artifacts.get(release["validation_report_hash"])
+        if (manifest["selection_rows"] != evaluation["row_hashes"]
+                or any(manifest["calibration_rows"] != value["row_hashes"]
+                       for value in candidate["calibrators"].values())):
+            raise ValueError("research model calibration/evaluation roster mismatch")
     pipeline = saved_pipeline(data_dir)
     with pipeline.store.connect() as db:
         found = db.execute(
