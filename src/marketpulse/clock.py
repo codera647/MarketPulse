@@ -34,12 +34,18 @@ class SessionWindow:
     bars_end: datetime
 
 
-@lru_cache(maxsize=2048)
+@lru_cache(maxsize=1)
+def exchange_calendar():
+    """Reuse one version-pinned NYSE calendar and its expensive holiday cache."""
+    return mcal.get_calendar("NYSE")
+
+
+@lru_cache(maxsize=4096)
 def session_window(session: date) -> SessionWindow:
-    calendar = mcal.get_calendar("NYSE")
-    schedule = calendar.schedule(start_date=session - timedelta(days=45), end_date=session)
+    schedule = _year_schedule(session.year)
     today = schedule[schedule.index.date == session]
-    earlier = schedule[schedule.index.date < session]
+    earlier = schedule[(schedule.index.date < session)
+                       & (schedule.index.date >= session - timedelta(days=45))]
     if today.empty or earlier.empty:
         raise ValueError(f"{session} is not a supported NYSE session")
     opening = today.iloc[0]["market_open"].to_pydatetime()
@@ -52,3 +58,10 @@ def session_window(session: date) -> SessionWindow:
     bars_start = datetime.combine(session - timedelta(days=45), time.min, ZoneInfo(ZONE))
     bars_end = datetime.combine(session, time.min, ZoneInfo(ZONE)) - timedelta(seconds=1)
     return SessionWindow(session, previous_close, cutoff, opening, closing, bars_start, bars_end)
+
+
+@lru_cache(maxsize=16)
+def _year_schedule(year: int):
+    """Amortize exchange special-date calculations, preserving the 45-day window."""
+    return exchange_calendar().schedule(start_date=date(year, 1, 1) - timedelta(days=45),
+                                        end_date=date(year, 12, 31))

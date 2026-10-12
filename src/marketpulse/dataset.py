@@ -4,20 +4,21 @@ from __future__ import annotations
 
 import json
 from collections import Counter, defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, timedelta
 from decimal import Decimal
 from functools import lru_cache
 from importlib.metadata import version
 from pathlib import Path
+from threading import local
 
-import pandas_market_calendars as mcal
-
-from marketpulse.clock import session_window
+from marketpulse.clock import exchange_calendar, session_window
 from marketpulse.constants import STOCKS
 from marketpulse.extraction import CONTRACT_VERSION, ExtractionConfig, ExtractionPipeline
 from marketpulse.features import FEATURE_SCHEMA, _load_snapshot, build_features
 from marketpulse.labels import _threshold, classify_return
 from marketpulse.outcomes import OUTCOME_CONTRACT, capture_regular_outcome, validate_saved_outcome
+from marketpulse.quarantine import QUALITY_POLICY, record_exclusion, validated_exclusions
 from marketpulse.storage import RawStore, digest
 
 DATASET_CONTRACT = "historical-dataset/1"
@@ -46,13 +47,15 @@ def load_contract(path: Path) -> dict:
 
 
 def validate_contract(contract: dict, *, require_approval: bool = False) -> None:
-    if (not isinstance(contract, dict) or set(contract) != FIELDS
+    if (not isinstance(contract, dict) or set(contract) not in (FIELDS, FIELDS | {"quality_policy"})
             or contract["schema"] != DATASET_CONTRACT
             or contract["symbols"] != list(STOCKS)
             or contract["outcome_convention"] != OUTCOME_CONTRACT
             or contract["feed"] not in {"iex", "sip"}
             or contract["adjustment"] not in {"raw", "split", "all"}):
         raise ValueError("unsupported dataset contract")
+    if "quality_policy" in contract and contract["quality_policy"] != QUALITY_POLICY:
+        raise ValueError("unsupported quality policy")
     if not isinstance(contract["threshold"], str):
         raise ValueError("threshold must be an explicit decimal string")
     _threshold(contract["threshold"])
@@ -74,15 +77,15 @@ def validate_contract(contract: dict, *, require_approval: bool = False) -> None
         start, end = (date.fromisoformat(value) for value in bounds)
         if end < start or (previous_end and start <= previous_end):
             raise ValueError("splits must be disjoint and chronological")
-        if (end - start).days > 1500:
+        if (end - start).days > 3653:
             raise ValueError("split date range exceeds the bounded research scope")
         sessions = market_sessions(start, end)
         if len(sessions) <= (0 if split == "train" else contract["embargo_sessions"]):
             raise ValueError("split has no usable sessions after embargo")
         total += len(sessions)
         previous_end = end
-    if total > 1000:
-        raise ValueError("contract exceeds the 1000-session research limit")
+    if total > 3000:
+        raise ValueError("contract exceeds the 3000-session research limit")
     if require_approval and (not contract["plan_approved"] or not contract["rights_confirmed"]
                              or not evidence):
         raise ValueError("bulk materialization needs plan approval and recorded data rights")
@@ -90,7 +93,7 @@ def validate_contract(contract: dict, *, require_approval: bool = False) -> None
 
 @lru_cache(maxsize=128)
 def market_sessions(start: date, end: date) -> tuple[date, ...]:
-    return tuple(value.date() for value in mcal.get_calendar("NYSE").valid_days(
+    return tuple(value.date() for value in exchange_calendar().valid_days(
         start_date=start, end_date=end))
 
 
@@ -118,7 +121,8 @@ def frozen_identity(contract: dict, pipeline: ExtractionPipeline) -> dict:
 
 
 def make_row(pipeline: ExtractionPipeline, snapshot_hash: str, outcome: dict,
-             contract_hash: str, contract: dict, split: str) -> dict:
+             contract_hash: str, contract: dict, split: str, *,
+             verified_outcome: tuple[str, dict] | None = None) -> dict:
     # Input hydration/feature calculation happens before the independent outcome lookup.
     snapshot, source, company, spy, articles = _load_snapshot(pipeline.data_dir, snapshot_hash)
     features = build_features(snapshot, source, company, spy, articles)
@@ -131,7 +135,10 @@ def make_row(pipeline: ExtractionPipeline, snapshot_hash: str, outcome: dict,
             or source.get("include_content") or binding["contract"] != OUTCOME_CONTRACT
             or split_sessions(contract).get(features["session"]) != split):
         raise ValueError("dataset input, outcome or split incompatibility")
-    bars = validate_saved_outcome(pipeline, outcome)
+    if verified_outcome is not None and verified_outcome[0] != digest(outcome):
+        raise ValueError("verified outcome belongs to another immutable manifest")
+    bars = (verified_outcome[1] if verified_outcome is not None
+            else validate_saved_outcome(pipeline, outcome))
     bar = bars[snapshot["symbol"]]
     movement = Decimal(bar["return_fraction"])
     news = [{
@@ -161,6 +168,10 @@ def dataset_report(pipeline: ExtractionPipeline, identity: dict) -> dict:
     contract_hash = digest(identity)
     artifact_store = RawStore(pipeline.data_dir / "datasets")
     expected = split_sessions(contract)
+    exclusions = validated_exclusions(pipeline, contract, contract_hash)
+    excluded_dates = {entry["session"] for entry in exclusions}
+    if excluded_dates - set(expected):
+        raise ValueError("excluded date outside the frozen plan")
     with pipeline.store.connect() as db:
         index = [dict(row) for row in db.execute(
             "SELECT * FROM dataset_rows WHERE contract_hash=? ORDER BY session,symbol",
@@ -172,18 +183,26 @@ def dataset_report(pipeline: ExtractionPipeline, identity: dict) -> dict:
     observed = set()
     errors = []
     manifests = []
+    # Scoped to this audit invocation: no persistent cache can conceal later corruption.
+    verified_outcomes = {}
     for entry in index:
         try:
             row = artifact_store.get(entry["row_hash"])
             if (row["contract_hash"] != contract_hash or row["session"] != entry["session"]
                     or row["symbol"] != entry["symbol"] or row["symbol"] not in STOCKS
-                    or expected.get(row["session"]) != row["split"]):
+                    or expected.get(row["session"]) != row["split"]
+                    or row["session"] in excluded_dates):
                 raise ValueError("row identity mismatch")
             job = pipeline.store.get_job(row["outcome_job_key"])
             if not job or job["status"] != "COMPLETE":
                 raise ValueError("outcome job missing")
-            rebuilt = make_row(pipeline, row["snapshot_hash"], json.loads(job["manifest_json"]),
-                               contract_hash, contract, row["split"])
+            outcome = json.loads(job["manifest_json"])
+            outcome_key = digest(outcome)
+            if outcome_key not in verified_outcomes:
+                verified_outcomes[outcome_key] = validate_saved_outcome(pipeline, outcome)
+            rebuilt = make_row(pipeline, row["snapshot_hash"], outcome,
+                               contract_hash, contract, row["split"],
+                               verified_outcome=(outcome_key, verified_outcomes[outcome_key]))
             if rebuilt != row:
                 raise ValueError("row disagrees with verified lineage")
         except (OSError, ValueError, KeyError, TypeError):
@@ -205,7 +224,7 @@ def dataset_report(pipeline: ExtractionPipeline, identity: dict) -> dict:
                           "symbol": row["symbol"], "split": row["split"]})
     missing = [{"session": day, "symbol": symbol, "split": split}
                for day, split in expected.items() for symbol in STOCKS
-               if (day, symbol) not in observed]
+               if day not in excluded_dates and (day, symbol) not in observed]
     leakage = {
         "provider_ids_crossing_splits": sorted(key for key, splits in article_splits.items()
                                                if len(splits) > 1),
@@ -217,7 +236,9 @@ def dataset_report(pipeline: ExtractionPipeline, identity: dict) -> dict:
                         or leakage["headline_groups_crossing_splits"])
     return {
         "schema": DATASET_CONTRACT, "contract_hash": contract_hash,
-        "expected_rows": len(expected) * len(STOCKS), "accepted_rows": len(manifests),
+        "expected_rows": (len(expected) - len(excluded_dates)) * len(STOCKS),
+        "planned_rows": len(expected) * len(STOCKS), "exclusions": exclusions,
+        "excluded_rows": len(excluded_dates) * len(STOCKS), "accepted_rows": len(manifests),
         "counts_by_split_ticker": dict(sorted(counts.items())),
         "counts_by_session": dict(sorted(date_counts.items())),
         "outcome_interior_gaps": outcome_gaps,
@@ -234,8 +255,14 @@ def dataset_report(pipeline: ExtractionPipeline, identity: dict) -> dict:
     }
 
 
-def run_dataset_batch(pipeline: ExtractionPipeline, contract: dict, start: date, end: date) -> dict:
+def run_dataset_batch(pipeline: ExtractionPipeline, contract: dict, start: date, end: date, *,
+                      audit: bool = True, progress=None, workers: int = 1,
+                      pipeline_factory=None) -> dict:
     validate_contract(contract, require_approval=True)
+    if type(workers) is not int or not 1 <= workers <= 3:
+        raise ValueError("collection needs one to three workers")
+    if workers > 1 and pipeline_factory is None:
+        raise ValueError("parallel collection requires isolated provider sessions")
     if end < start:
         raise ValueError("batch end precedes start")
     if (end - start).days > 60:
@@ -252,28 +279,73 @@ def run_dataset_batch(pipeline: ExtractionPipeline, contract: dict, start: date,
     contract_hash = RawStore(pipeline.data_dir / "contracts").put(identity)
     artifacts = RawStore(pipeline.data_dir / "datasets")
     failures = []
-    for day in days:
+    worker_local = local()
+    worker_pipelines = []
+
+    def materialize(day):
+        active = pipeline if workers == 1 else getattr(worker_local, "pipeline", None)
+        if active is None:
+            active = pipeline_factory()
+            worker_local.pipeline = active
+            worker_pipelines.append(active)
         try:
-            source = pipeline.run(ExtractionConfig(day, feed=contract["feed"],
-                                                   adjustment=contract["adjustment"]))
+            if (active.data_dir != pipeline.data_dir
+                    or getattr(active.client, "base_url", "https://data.alpaca.markets")
+                    != identity["data_url"]):
+                raise ValueError("worker source identity mismatch")
+            source = active.run(ExtractionConfig(day, feed=contract["feed"],
+                                                 adjustment=contract["adjustment"]))
             if source["state"] != "COMPLETE":
-                failures.append({"session": day.isoformat(), "stage": "inputs",
-                                 "state": source["state"]})
-                break  # Held work needs review; don't sweep the rest of the provider history.
-            outcome = capture_regular_outcome(pipeline, day, feed=contract["feed"],
+                return {"session": day.isoformat(), "stage": "inputs", "state": source["state"]}
+            outcome = capture_regular_outcome(active, day, feed=contract["feed"],
                                               adjustment=contract["adjustment"])
             if outcome["state"] != "COMPLETE":
-                failures.append({"session": day.isoformat(), "stage": "outcomes",
-                                 "state": outcome["state"]})
-                break
+                if (outcome["state"] == "FAILED"
+                        and contract.get("quality_policy") == QUALITY_POLICY):
+                    try:
+                        excluded = record_exclusion(active, contract, contract_hash,
+                                                    day.isoformat())
+                    except (ValueError, OSError, KeyError, TypeError):
+                        pass  # All non-boundary failures/UNKNOWN states still stop collection.
+                    else:
+                        return {**excluded, "state": "QUARANTINED", "rows_added": 0}
+                return {"session": day.isoformat(), "stage": "outcomes", "state": outcome["state"]}
+            verified_outcome = (digest(outcome), validate_saved_outcome(active, outcome))
             for symbol in STOCKS:
-                row = make_row(pipeline, source["snapshots"][symbol], outcome, contract_hash,
-                               contract, eligible[day.isoformat()])
-                pipeline.store.append_dataset_row(artifacts.put(row), contract_hash, row)
+                row = make_row(active, source["snapshots"][symbol], outcome, contract_hash,
+                               contract, eligible[day.isoformat()],
+                               verified_outcome=verified_outcome)
+                active.store.append_dataset_row(artifacts.put(row), contract_hash, row)
+            return {"session": day.isoformat(), "state": "COMPLETE", "rows_added": 6}
         except (ValueError, OSError, KeyError, TypeError) as error:
-            failures.append({"session": day.isoformat(), "stage": "materialization",
-                             "state": type(error).__name__})
-            break
+            return {"session": day.isoformat(), "stage": "materialization",
+                    "state": type(error).__name__}
+
+    # Never queue the remaining history beyond the active, bounded wave. On any
+    # hold/failure, already-started dates settle; no new wave is dispatched.
+    try:
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            for offset in range(0, len(days), workers):
+                results = list(executor.map(materialize, days[offset:offset + workers]))
+                for result in results:
+                    if "stage" in result:
+                        failures.append(result)
+                    elif progress:
+                        progress(result)
+                if failures:
+                    break
+    finally:
+        for active in worker_pipelines:
+            if hasattr(active.client, "session"):
+                active.client.session.close()
+    if not audit:
+        with pipeline.store.connect() as db:
+            count = db.execute("SELECT COUNT(*) FROM dataset_rows WHERE contract_hash=?",
+                               (contract_hash,)).fetchone()[0]
+        return {"contract_hash": contract_hash, "report_hash": None,
+                "status": "BATCH_BLOCKED" if failures else "PENDING_FULL_AUDIT",
+                "expected_rows": len(eligible) * len(STOCKS), "accepted_rows": count,
+                "batch_failures": failures, "ready_for_training": False}
     report = dataset_report(pipeline, identity)
     report["batch_failures"] = failures
     if failures:

@@ -12,9 +12,7 @@ from functools import lru_cache
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-import pandas_market_calendars as mcal
-
-from marketpulse.clock import parse_time, session_window, utc_iso
+from marketpulse.clock import exchange_calendar, parse_time, session_window, utc_iso
 from marketpulse.constants import STOCKS, ZONE
 from marketpulse.storage import RawStore, digest
 
@@ -180,9 +178,9 @@ def _verify_raw_versions(
             raise ValueError("normalized article disagrees with immutable raw version")
 
 
-@lru_cache(maxsize=2048)
+@lru_cache(maxsize=4096)
 def _expected_prior_dates(session: date) -> tuple[date, ...]:
-    dates = [item.date() for item in mcal.get_calendar("NYSE").valid_days(
+    dates = [item.date() for item in exchange_calendar().valid_days(
         start_date=session - timedelta(days=60), end_date=session - timedelta(days=1)
     )]
     if len(dates) < 21:

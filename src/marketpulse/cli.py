@@ -112,6 +112,10 @@ def main(argv: list[str] | None = None) -> int:
     collect.add_argument("--contract", required=True, type=Path)
     collect.add_argument("--batch-sessions", type=int, default=20)
     collect.add_argument("--max-batches", type=int, default=1)
+    collect.add_argument("--workers", type=int, choices=(1, 2, 3), default=1,
+                         help="bounded workers with separate provider sessions")
+    collect.add_argument("--audit-at-end", action="store_true",
+                         help="verify each source/row now; defer the full roster audit to run end")
     collect.add_argument("--data-dir", type=Path, default=Path("data/m03"))
     collect.add_argument("--env-file", type=Path)
     inspect = commands.add_parser("dataset-inspect", help="offline lineage and completeness report")
@@ -120,6 +124,8 @@ def main(argv: list[str] | None = None) -> int:
     promote = commands.add_parser("dataset-promote", help="record an explicit human quality review")
     promote.add_argument("--contract", required=True, type=Path)
     promote.add_argument("--review", required=True, type=Path)
+    promote.add_argument("--news-models", action="store_true",
+                         help="explicitly promote for price AND news model validation")
     promote.add_argument("--data-dir", type=Path, default=Path("data/m03"))
     train = commands.add_parser(
         "baseline-train", help="reviewed real-data baselines; validation only, final test locked"
@@ -127,6 +133,27 @@ def main(argv: list[str] | None = None) -> int:
     train.add_argument("--contract", required=True, type=Path)
     train.add_argument("--promotion-hash", required=True)
     train.add_argument("--data-dir", type=Path, default=Path("data/m03"))
+    real_train = commands.add_parser(
+        "research-train", help="authorized offline four-model fitting; no deployment promotion")
+    real_train.add_argument("--contract", required=True, type=Path)
+    real_train.add_argument("--authorization", required=True, type=Path)
+    real_train.add_argument("--data-dir", required=True, type=Path)
+    real_build = commands.add_parser(
+        "research-build", help="bounded real collection, audit and authorized offline fitting")
+    real_build.add_argument("--contract", required=True, type=Path)
+    real_build.add_argument("--authorization-evidence", required=True)
+    real_build.add_argument("--data-dir", required=True, type=Path)
+    real_build.add_argument("--env-file", type=Path)
+    real_build.add_argument("--workers", type=int, choices=(1, 2, 3), default=1)
+    real_build.add_argument("--cycles", type=int, choices=(1, 2, 3), default=3)
+    real_build.add_argument("--mask-seen-stories", action="store_true",
+                           help="authorized earlier-date story masking; raw audit remains strict")
+    real_predict = commands.add_parser(
+        "research-predict", help="input-only saved research inference")
+    real_predict.add_argument("--data-dir", required=True, type=Path)
+    real_predict.add_argument("--release-hash", required=True)
+    real_predict.add_argument("--symbol", required=True)
+    real_predict.add_argument("--session", required=True, type=date.fromisoformat)
     full_demo = commands.add_parser("demo-init", help="build the full credential-free fixture demo")
     full_demo.add_argument("--data-dir", type=Path, default=Path("data/demo"))
     full_demo.add_argument("--seed", type=int, default=42)
@@ -150,6 +177,54 @@ def main(argv: list[str] | None = None) -> int:
     restore.add_argument("--destination", type=Path, required=True)
     restore.add_argument("--manifest-hash", required=True)
     arguments = parser.parse_args(argv)
+
+    if arguments.command == "research-build":
+        from marketpulse.real_build import build_real_research
+
+        try:
+            contract = load_contract(arguments.contract)
+            validate_contract(contract, require_approval=True)
+            settings = load_alpaca_settings(arguments.env_file)
+
+            def real_pipeline_factory():
+                return ExtractionPipeline(arguments.data_dir, AlpacaClient(
+                    settings.key, settings.secret, base_url=settings.data_url))
+
+            result = build_real_research(
+                real_pipeline_factory(), contract, evidence=arguments.authorization_evidence,
+                workers=arguments.workers, cycles=arguments.cycles,
+                mask_previous_stories=arguments.mask_seen_stories,
+                pipeline_factory=real_pipeline_factory,
+                progress=lambda item: print(json.dumps(item, sort_keys=True),
+                                            file=sys.stderr, flush=True))
+        except Exception as error:
+            print(f"real build stopped: {type(error).__name__}; "
+                  "inspect private status and harness evidence; no secrets logged", file=sys.stderr)
+            return 2
+        print(json.dumps(result, sort_keys=True, indent=2))
+        return 0 if result["state"] == "COMPLETE" else 1
+
+    if arguments.command in {"research-train", "research-predict"}:
+        from marketpulse.real_training import (
+            load_training_authorization,
+            predict_real_research,
+            train_real_models,
+        )
+
+        try:
+            if arguments.command == "research-train":
+                result = train_real_models(arguments.data_dir, load_contract(arguments.contract),
+                                           load_training_authorization(arguments.authorization))
+            else:
+                result = predict_real_research(arguments.data_dir, arguments.release_hash,
+                                               arguments.symbol, arguments.session.isoformat())
+        except Exception as error:
+            print(f"offline research operation refused or failed: {type(error).__name__}; "
+                  "inspect private quality evidence; no credentials or provider payloads logged",
+                  file=sys.stderr)
+            return 2
+        print(json.dumps(result, indent=2, sort_keys=True))
+        return 0 if result.get("state", "COMPLETE") == "COMPLETE" else 1
 
     if arguments.command in {"demo-init", "demo-forecast", "demo-reconcile", "demo-evaluation",
                               "demo-ops", "serve", "dashboard", "demo-backup", "demo-restore"}:
@@ -231,11 +306,16 @@ def main(argv: list[str] | None = None) -> int:
                 if not 1 <= arguments.max_batches <= 50:
                     raise ValueError("collection budget must be 1 to 50 batches")
                 settings = load_alpaca_settings(arguments.env_file)
-                pipeline = ExtractionPipeline(arguments.data_dir, AlpacaClient(
-                    settings.key, settings.secret, base_url=settings.data_url))
+                def pipeline_factory():
+                    return ExtractionPipeline(arguments.data_dir, AlpacaClient(
+                        settings.key, settings.secret, base_url=settings.data_url))
+
+                pipeline = pipeline_factory()
                 result = collect_dataset(
                     pipeline, contract, batch_sessions=arguments.batch_sessions,
                     max_batches=arguments.max_batches,
+                    audit_each_batch=not arguments.audit_at_end,
+                    workers=arguments.workers, pipeline_factory=pipeline_factory,
                     progress=lambda item: print(json.dumps(item, sort_keys=True), file=sys.stderr))
             else:
                 if arguments.command != "dataset-inspect":
@@ -244,7 +324,8 @@ def main(argv: list[str] | None = None) -> int:
                 if arguments.command == "dataset-inspect":
                     result = inspect_dataset(pipeline, contract)
                 elif arguments.command == "dataset-promote":
-                    result = promote_dataset(pipeline, contract, load_review(arguments.review))
+                    result = promote_dataset(pipeline, contract, load_review(arguments.review),
+                                             news_models=arguments.news_models)
                 else:
                     result = train_reviewed_baselines(pipeline, contract, arguments.promotion_hash)
         except Exception as error:

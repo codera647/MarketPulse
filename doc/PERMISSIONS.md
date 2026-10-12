@@ -1,5 +1,16 @@
 # Data-permission review evidence
 
+## User confirmation on 2026-10-12 (Asia/Karachi)
+
+The user now states: "I have data permissions" and explicitly requests building
+the complete real dataset and training the model. This supersedes their earlier
+hold for this private Alpaca/Benzinga research workflow. It is a user attestation,
+not an independently inspected provider grant or permission to redistribute data.
+The private approved contract records this exact basis. No paid subscription,
+public dataset publication, social-cookie access, or broker order is authorized.
+Dataset-integrity checks and honest historical-approximation labels still apply.
+Historical paragraphs below document the earlier unresolved status.
+
 Status on 2026-10-10: remaining questions unresolved; explicit user hold on
 bulk collection/training unchanged. This is evidence, not a legal opinion.
 

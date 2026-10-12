@@ -65,4 +65,39 @@ See [DEMO](DEMO.md) and [RELEASE](RELEASE.md) for implementation and limitations
 
 ## Pending decision protocol
 
+## D22 — Authorized larger private research run (2026-10-12)
+
+User confirmation supersedes D17's earlier rights hold for this private
+Alpaca/Benzinga experiment; it is recorded as attestation, not independent legal
+verification. After the user requested a larger history, the active private
+experiment uses 2018–2024 training, 2025 validation, Jan–Sep 2026 held-out test,
+preserving the six companies, SPY context, 09:00 cutoff and fixed 1% minute proxy.
+The user approved whole-date quarantine for confirmed coverage failures.
+Only typed FAIL plus independent missing-boundary replay qualifies; UNKNOWN
+work and other integrity failures still stop. See [REAL_DATA_RUN](REAL_DATA_RUN.md).
+
+## D23 — Offline diagnostic fitting is not human promotion (2026-10-12)
+
+The explicit user request to train authorizes research fitting after a complete
+technical audit. That authorization binds exact contract/report hashes; no
+human review is fabricated. Four matched models, training-only preprocessing,
+separated calibration/selection and sealed final-test fitting boundaries are
+implemented. Research releases prohibit paper actions/deployment and report
+human_dataset_reviewed=false. Existing reviewed-promotion workflows and remaining
+milestone review criteria remain intact. No real metrics are claimed yet.
+
+## D24 — Earlier-date story masking (2026-10-12)
+
+The user explicitly approved masking previously seen stories in later model
+inputs instead of dropping valid company/date rows or stopping on exact repeats.
+Raw news and strict duplicate reports remain unchanged. Registry keys use only
+provider IDs, normalized headlines and first input dates; no labels/outcomes.
+First-date news is retained across all companies on that date, and later news
+is masked chronologically. Training vocabulary/IDF/weights remain train-only;
+calibration and selection replay earlier input history, and no final-test input
+enters the fitted release. Complete duplicate-only raw rosters can enter this
+explicit research authorization route, never unmasked/human promotion. This
+conservative lexical rule can also mask distinct events with identical titles.
+See REAL_DATA_RUN and the masking/held-out tests; no market skill is implied.
+
 For each open item, log owner, date, evidence link, considered options, effect on scope, and whether it blocks S1 feasibility, final-test lock, or release. Never convert an untested assumption into an achieved metric. The first explicit stop/go gate is data access and point-in-time quality; the second is model/coverage evidence before paper action; the third is recovery and demo readiness.

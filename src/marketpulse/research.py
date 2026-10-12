@@ -86,24 +86,39 @@ def inspect_dataset(pipeline: ExtractionPipeline, contract: dict) -> dict:
 
 
 def collect_dataset(pipeline: ExtractionPipeline, contract: dict, *, batch_sessions: int = 20,
-                    max_batches: int = 1, progress=None) -> dict:
+                    max_batches: int = 1, progress=None, audit_each_batch: bool = True,
+                    workers: int = 1, pipeline_factory=None,
+                    allow_story_duplicates: bool = False) -> dict:
     """Resume verified missing dates; stop at the first failure/hold or explicit budget."""
     validate_contract(contract, require_approval=True)
+    if type(allow_story_duplicates) is not bool:
+        raise ValueError("story-duplicate collection override must be explicit")
+    if type(workers) is not int or not 1 <= workers <= 3:
+        raise ValueError("collection needs one to three workers")
+    if workers > 1 and pipeline_factory is None:
+        raise ValueError("parallel collection requires isolated provider sessions")
     plan = collection_plan(contract, batch_sessions=batch_sessions)
     if type(max_batches) is not int or not 1 <= max_batches <= 50:
         raise ValueError("collection budget must be 1 to 50 batches")
     days = split_sessions(contract)
-    if any(pipeline.clock() <= session_window(date.fromisoformat(day)).market_close
-           + timedelta(minutes=15) for day in days):
+    # All dates use one exchange calendar and are chronological. If the latest
+    # planned close is safely in the past, every earlier planned close is too.
+    # Avoid thousands of redundant holiday-calendar constructions in a large run.
+    if pipeline.clock() <= session_window(date.fromisoformat(max(days))).market_close \
+            + timedelta(minutes=15):
         raise ValueError("all planned sessions must be closed more than 15 minutes ago")
     identity = frozen_identity(contract, pipeline)
     RawStore(pipeline.data_dir / "contracts").put(identity)
     report = dataset_report(pipeline, identity)
     completed_batches = []
+    missing_days = {row["session"] for row in report["missing_rows"]}
     for batch in plan["batches"]:
-        if report["status"] == "INTEGRITY_BLOCKED":
+        duplicate_only = (not report["lineage_errors"] and not report.get("batch_failures")
+                          and bool(report["leakage"]["provider_ids_crossing_splits"]
+                                   or report["leakage"]["headline_groups_crossing_splits"]))
+        if report["status"] == "INTEGRITY_BLOCKED" and not (
+                allow_story_duplicates and duplicate_only):
             break
-        missing_days = {row["session"] for row in report["missing_rows"]}
         eligible = [day for day in days if batch["start"] <= day <= batch["end"]
                     and day in missing_days]
         if not eligible:
@@ -111,15 +126,27 @@ def collect_dataset(pipeline: ExtractionPipeline, contract: dict, *, batch_sessi
         if len(completed_batches) >= max_batches:
             break
         result = run_dataset_batch(pipeline, contract, date.fromisoformat(eligible[0]),
-                                   date.fromisoformat(eligible[-1]))
+                                   date.fromisoformat(eligible[-1]), audit=audit_each_batch,
+                                   progress=progress, workers=workers,
+                                   pipeline_factory=pipeline_factory)
         completed_batches.append(result)
-        report = RawStore(pipeline.data_dir / "datasets").get(result["report_hash"])
+        if audit_each_batch:
+            report = RawStore(pipeline.data_dir / "datasets").get(result["report_hash"])
+            missing_days = {row["session"] for row in report["missing_rows"]}
+        else:
+            missing_days.difference_update(eligible)
         if progress:
             progress({"batch": len(completed_batches), "status": result["status"],
                       "accepted_rows": result["accepted_rows"],
                       "expected_rows": result["expected_rows"]})
         if result["batch_failures"] or result["status"] == "INTEGRITY_BLOCKED":
             break
+    if not audit_each_batch:
+        report = dataset_report(pipeline, identity)
+        failures = [failure for batch in completed_batches for failure in batch["batch_failures"]]
+        if failures:
+            report["batch_failures"] = failures
+            report["status"] = "BATCH_BLOCKED"
     result = {"schema": PIPELINE_VERSION, **_report_result(pipeline, identity, report),
               "batches_this_run": len(completed_batches), "max_batches": max_batches,
               "batch_results": completed_batches, "final_test_metrics_emitted": False,
@@ -168,7 +195,8 @@ def validate_review(review: dict) -> None:
         raise ValueError("review cannot be dated in the future")
 
 
-def promote_dataset(pipeline: ExtractionPipeline, contract: dict, review: dict) -> dict:
+def promote_dataset(pipeline: ExtractionPipeline, contract: dict, review: dict, *,
+                    news_models: bool = False) -> dict:
     """Record a human decision, never manufacture rights or auto-approve quality."""
     validate_contract(contract, require_approval=True)
     validate_review(review)
@@ -186,7 +214,8 @@ def promote_dataset(pipeline: ExtractionPipeline, contract: dict, review: dict) 
     promotion = {"schema": PROMOTION_VERSION, "contract_hash": digest(identity),
                  "report_hash": review["report_hash"], "review": review,
                  "availability_tier": "HISTORICAL_APPROXIMATE",
-                 "purpose": "MAJORITY_PRICE_VALIDATION_ONLY", "final_test_released": False,
+                 "purpose": ("MAJORITY_PRICE_NEWS_VALIDATION_ONLY" if news_models else
+                             "MAJORITY_PRICE_VALIDATION_ONLY"), "final_test_released": False,
                  "paper_action_authorized": False}
     key = RawStore(pipeline.data_dir / "promotions").put(promotion)
     return {"promotion_hash": key, "contract_hash": digest(identity),
@@ -208,7 +237,8 @@ def reviewed_rows(pipeline: ExtractionPipeline, contract: dict,
             or promotion["review"]["contract_hash"] != key
             or promotion["review"]["report_hash"] != promotion["report_hash"]
             or promotion.get("availability_tier") != "HISTORICAL_APPROXIMATE"
-            or promotion.get("purpose") != "MAJORITY_PRICE_VALIDATION_ONLY"
+            or promotion.get("purpose") not in {"MAJORITY_PRICE_VALIDATION_ONLY",
+                                                "MAJORITY_PRICE_NEWS_VALIDATION_ONLY"}
             or promotion.get("final_test_released") is not False
             or promotion.get("paper_action_authorized") is not False):
         raise ValueError("dataset promotion is missing, incompatible or unauthorized")
@@ -237,6 +267,7 @@ def reviewed_rows(pipeline: ExtractionPipeline, contract: dict,
         raise ValueError("dataset row index differs from the promoted roster")
     results = {"train": [], "validation": []}
     checked_sources = set()
+    verified_outcomes = {}
     for entry in entries:
         if entry["split"] == "test":
             continue  # Do not load or recompute test rows/outcomes in a learning workflow.
@@ -250,8 +281,15 @@ def reviewed_rows(pipeline: ExtractionPipeline, contract: dict,
         job = pipeline.store.get_job(row["outcome_job_key"])
         if not job or job["status"] != "COMPLETE":
             raise ValueError("reviewed outcome job is missing")
-        rebuilt = make_row(pipeline, row["snapshot_hash"], json.loads(job["manifest_json"]),
-                           key, contract, entry["split"])
+        from marketpulse.outcomes import validate_saved_outcome
+
+        outcome = json.loads(job["manifest_json"])
+        outcome_key = digest(outcome)
+        if outcome_key not in verified_outcomes:
+            verified_outcomes[outcome_key] = validate_saved_outcome(pipeline, outcome)
+        rebuilt = make_row(pipeline, row["snapshot_hash"], outcome,
+                           key, contract, entry["split"],
+                           verified_outcome=(outcome_key, verified_outcomes[outcome_key]))
         if rebuilt != row:
             raise ValueError("promoted row no longer matches source lineage")
         results[entry["split"]].append({**row, "row_hash": entry["row_hash"]})

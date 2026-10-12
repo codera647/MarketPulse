@@ -1,5 +1,12 @@
 # M03 historical dataset pipeline
 
+2026-10-12 update: the user has confirmed data permissions and requested real
+training and a larger historical dataset. Authorized collection now uses a
+private 2018–September 2026 contract and a user-approved whole-date boundary-gap
+quarantine policy. See [REAL_DATA_RUN](REAL_DATA_RUN.md) for current scope and
+evidence. The older plan/hold below is retained as historical context; it is not
+the active rights state. A complete real dataset has not yet been achieved.
+
 Status on 2026-10-10: software implemented; live bulk collection and model
 training remain gated. The user approved the research dates and fixed 1%
 threshold, and explicitly asked to keep bulk collection gated because data

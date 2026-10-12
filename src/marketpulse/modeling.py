@@ -24,6 +24,14 @@ from marketpulse.baselines import (
     validate_model,
 )
 from marketpulse.clock import parse_time, session_window
+from marketpulse.preprocessing import (
+    FINANCIAL_TOKEN_PATTERN,
+    NEWS_MASK_POLICY,
+    PREPROCESSING_VERSION,
+    clean_news_text,
+    extend_news_registry,
+    mask_seen_stories,
+)
 from marketpulse.storage import digest
 
 MODEL_SCHEMA = "news-comparison/1"
@@ -31,12 +39,13 @@ MODEL_NAMES = ("majority", "price_only", "text_only", "combined")
 TOKEN_PATTERN = r"(?u)\b\w\w+\b"
 
 
-def headline_text(item: dict) -> str:
+def headline_text(item: dict, *, availability_tier: str = "FIXTURE",
+                  news_registry: dict | None = None) -> str:
     """Accept input-only text; a feature document never includes future prices/labels."""
     from datetime import date
 
     features = item["features"]
-    validate_features(features)
+    validate_features(features, availability_tier=availability_tier)
     window = session_window(date.fromisoformat(features["session"]))
     news = item.get("news", [])
     if len(news) != features["values"]["news_article_count"]:
@@ -53,6 +62,10 @@ def headline_text(item: dict) -> str:
             raise ValueError("post-cutoff text is not a prediction input")
         if not isinstance(article["headline"], str) or len(article["headline"]) > 10000:
             raise ValueError("invalid headline")
+    if availability_tier == "HISTORICAL_APPROXIMATE":
+        if news_registry is not None:
+            news = mask_seen_stories(news_registry, news, features["session"])
+        return clean_news_text(news)
     return " ".join(article["headline"] for article in news) or "noeligibleheadline"
 
 
@@ -65,7 +78,7 @@ def _softmax(scores) -> np.ndarray:
 
 
 def _tfidf(model: dict, text: str) -> np.ndarray:
-    counts = Counter(re.findall(TOKEN_PATTERN, text.lower()))
+    counts = Counter(re.findall(model.get("token_pattern", TOKEN_PATTERN), text.lower()))
     values = np.array([counts[word] for word in model["vocabulary"]]) * model["idf"]
     norm = float(np.linalg.norm(values))
     return values / norm if norm else values
@@ -98,20 +111,32 @@ def _classifier(x, labels) -> tuple[dict, LogisticRegression]:
     }, estimator
 
 
-def fit_comparison(train: list[dict]) -> dict:
+def fit_comparison(train: list[dict], *, availability_tier: str = "FIXTURE",
+                   max_text_features: int = 256, mask_previous_stories: bool = False) -> dict:
     if not train or any(row["split"] != "train" for row in train):
         raise ValueError("text vocabulary/classifiers fit on training rows only")
-    base = fit_baselines(train)
-    texts = [headline_text(row) for row in train]
-    vectorizer = TfidfVectorizer(max_features=256, token_pattern=TOKEN_PATTERN)
+    if type(max_text_features) is not int or not 1 <= max_text_features <= 2048:
+        raise ValueError("text vocabulary must be bounded to 1–2048 features")
+    base = fit_baselines(train, availability_tier=availability_tier)
+    if type(mask_previous_stories) is not bool or (
+            mask_previous_stories and availability_tier != "HISTORICAL_APPROXIMATE"):
+        raise ValueError("story masking requires explicit real-research mode")
+    registry = {"provider_ids": {}, "headline_groups": {}} if mask_previous_stories else None
+    if registry is not None:
+        extend_news_registry(registry, train)  # Training input metadata only.
+    texts = [headline_text(row, availability_tier=availability_tier, news_registry=registry)
+             for row in train]
+    pattern = FINANCIAL_TOKEN_PATTERN if availability_tier != "FIXTURE" else TOKEN_PATTERN
+    vectorizer = TfidfVectorizer(max_features=max_text_features, token_pattern=pattern)
     text_matrix = vectorizer.fit_transform(texts).toarray()
     price_matrix = np.array([_price_vector(base, row["features"]) for row in train])
     labels = [row["label"] for row in train]
     text, text_estimator = _classifier(text_matrix, labels)
-    combined, combined_estimator = _classifier(np.column_stack((price_matrix, text_matrix)), labels)
+    combined_matrix = np.column_stack((price_matrix, text_matrix))
+    combined, combined_estimator = _classifier(combined_matrix, labels)
     model = {
         "schema": MODEL_SCHEMA,
-        "availability_tier": "FIXTURE",
+        "availability_tier": availability_tier,
         "base": base,
         "class_names": list(CLASSES),
         "vocabulary": vectorizer.get_feature_names_out().tolist(),
@@ -123,18 +148,23 @@ def fit_comparison(train: list[dict]) -> dict:
         "calibration_fitted": False,
         "paper_action_authorized": False,
     }
+    if availability_tier != "FIXTURE":
+        model.update({"token_pattern": pattern, "max_text_features": max_text_features,
+                      "preprocessing_version": PREPROCESSING_VERSION})
+    if registry is not None:
+        model.update({"news_mask_policy": NEWS_MASK_POLICY, "news_registry": registry})
+    expected_text = text_estimator.predict_proba(text_matrix)
+    expected_combined = combined_estimator.predict_proba(combined_matrix)
     for index, row in enumerate(train):
         raw = score_comparison(model, row, calibrated=False)
         if not np.allclose(
             raw["text_only"],
-            text_estimator.predict_proba(text_matrix[index : index + 1])[0],
+            expected_text[index],
             atol=1e-12,
             rtol=1e-12,
         ) or not np.allclose(
             raw["combined"],
-            combined_estimator.predict_proba(
-                np.column_stack((price_matrix, text_matrix))[index : index + 1]
-            )[0],
+            expected_combined[index],
             atol=1e-12,
             rtol=1e-12,
         ):
@@ -145,17 +175,32 @@ def fit_comparison(train: list[dict]) -> dict:
 def validate_comparison(model: dict) -> None:
     if (
         model.get("schema") != MODEL_SCHEMA
-        or model.get("availability_tier") != "FIXTURE"
+        or model.get("availability_tier") not in {"FIXTURE", "HISTORICAL_APPROXIMATE"}
         or model.get("class_names") != list(CLASSES)
         or model.get("paper_action_authorized") is not False
     ):
         raise ValueError("incompatible comparison model")
     validate_model(model["base"])
-    if model["base"]["availability_tier"] != "FIXTURE":
-        raise ValueError("fixture comparison cannot wrap a real model")
+    if model["base"]["availability_tier"] != model["availability_tier"]:
+        raise ValueError("comparison and base model data tiers must match")
+    if model["availability_tier"] != "FIXTURE" and (
+        model.get("token_pattern") != FINANCIAL_TOKEN_PATTERN
+        or model.get("preprocessing_version") != PREPROCESSING_VERSION
+        or type(model.get("max_text_features")) is not int
+        or not 1 <= model["max_text_features"] <= 2048
+    ):
+        raise ValueError("unsupported research text preprocessing")
+    if "news_registry" in model and (
+            model.get("news_mask_policy") != NEWS_MASK_POLICY
+            or model["availability_tier"] != "HISTORICAL_APPROXIMATE"
+            or not isinstance(model["news_registry"], dict)
+            or set(model["news_registry"]) != {"provider_ids", "headline_groups"}
+            or any(not isinstance(value, dict) or len(value) > 500000
+                   for value in model["news_registry"].values())):
+        raise ValueError("invalid seen-story registry")
     words, idf = model["vocabulary"], np.asarray(model["idf"], dtype=float)
     if (
-        not 1 <= len(words) <= 256
+        not 1 <= len(words) <= model.get("max_text_features", 256)
         or len(set(words)) != len(words)
         or any(not isinstance(word, str) or len(word) > 100 for word in words)
         or idf.shape != (len(words),)
@@ -183,7 +228,8 @@ def validate_comparison(model: dict) -> None:
 
 def score_comparison(model: dict, item: dict, *, calibrated: bool = True) -> dict:
     validate_comparison(model)
-    text = headline_text(item)
+    text = headline_text(item, availability_tier=model["availability_tier"],
+                         news_registry=model.get("news_registry"))
     baseline = predict_baselines(model["base"], item["features"])
     vectors = {"text_only": _tfidf(model, text)}
     vectors["combined"] = np.concatenate(
@@ -208,6 +254,23 @@ def score_comparison(model: dict, item: dict, *, calibrated: bool = True) -> dic
     return {name: value.tolist() for name, value in scores.items()}
 
 
+def chronological_scores(model: dict, rows: list[dict], *, calibrated: bool = True) -> list[dict]:
+    """Replay input-only story history; never mutate the frozen candidate model."""
+    if "news_registry" not in model:
+        return [score_comparison(model, row, calibrated=calibrated) for row in rows]
+    from copy import deepcopy
+
+    working = deepcopy(model)
+    results = [None] * len(rows)
+    dates = sorted({row["features"]["session"] for row in rows})
+    for session in dates:
+        indices = [i for i, row in enumerate(rows) if row["features"]["session"] == session]
+        extend_news_registry(working["news_registry"], [rows[i] for i in indices])
+        for i in indices:
+            results[i] = score_comparison(working, rows[i], calibrated=calibrated)
+    return results
+
+
 def calibrate(model: dict, rows: list[dict]) -> dict:
     from copy import deepcopy
 
@@ -216,7 +279,7 @@ def calibrate(model: dict, rows: list[dict]) -> dict:
     if set(model["training_row_hashes"]) & {row["row_hash"] for row in rows}:
         raise ValueError("calibration overlaps training")
     result = deepcopy(model)
-    raw = [score_comparison(model, row, calibrated=False) for row in rows]
+    raw = chronological_scores(model, rows, calibrated=False)
     labels = [row["label"] for row in rows]
     for name in MODEL_NAMES:
         candidates = []
@@ -228,6 +291,8 @@ def calibrate(model: dict, rows: list[dict]) -> dict:
             "row_hashes": [row["row_hash"] for row in rows],
         }
     result["calibration_fitted"] = True
+    if "news_registry" in result:
+        extend_news_registry(result["news_registry"], rows)
     return result
 
 
@@ -282,13 +347,14 @@ def evaluate_comparison(model: dict, rows: list[dict], *, split: str) -> dict:
     used.update(model["calibrators"]["combined"]["row_hashes"])
     if used & {row["row_hash"] for row in rows}:
         raise ValueError("evaluation overlaps fit/calibration rows")
-    scores = [score_comparison(model, row) for row in rows]
+    scores = chronological_scores(model, rows)
     results = {
         name: metrics([row["label"] for row in rows], [item[name] for item in scores])
         for name in MODEL_NAMES
     }
-    # Resample dates, not individual stocks. These intervals describe manufactured fixtures only.
+    # Resample complete dates, not individual stocks. Not a market-independence guarantee.
     days = sorted({row["session"] for row in rows})
+    groups = {day: [i for i, row in enumerate(rows) if row["session"] == day] for day in days}
     rng = np.random.default_rng(123)
     for name in MODEL_NAMES:
         samples = []
@@ -296,8 +362,7 @@ def evaluate_comparison(model: dict, rows: list[dict], *, split: str) -> dict:
             selected = [
                 index
                 for day in rng.choice(days, size=len(days), replace=True)
-                for index, row in enumerate(rows)
-                if row["session"] == day
+                for index in groups[day]
             ]
             samples.append(
                 metrics([rows[i]["label"] for i in selected], [scores[i][name] for i in selected])[
@@ -307,12 +372,15 @@ def evaluate_comparison(model: dict, rows: list[dict], *, split: str) -> dict:
         results[name]["date_bootstrap_accuracy_95"] = np.quantile(samples, [0.025, 0.975]).tolist()
     return {
         "schema": MODEL_SCHEMA,
-        "status": "FIXTURE_SOFTWARE_CHECK_ONLY",
-        "availability_tier": "FIXTURE",
+        "status": ("FIXTURE_SOFTWARE_CHECK_ONLY" if model["availability_tier"] == "FIXTURE"
+                   else "HISTORICAL_RESEARCH_EVALUATION"),
+        "availability_tier": model["availability_tier"],
         "split": split,
         "rows": len(rows),
         "model_hash": digest(model),
         "row_hashes": [row["row_hash"] for row in rows],
         "metrics": results,
-        "notice": "Manufactured relationships; NOT market accuracy",
+        "notice": ("Manufactured relationships; NOT market accuracy"
+                   if model["availability_tier"] == "FIXTURE" else
+                   "Approximate historical replay; not investment advice or live performance"),
     }

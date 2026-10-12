@@ -1,5 +1,11 @@
 # Collection-to-baseline research pipeline
 
+2026-10-12 extension: [REAL_DATA_RUN](REAL_DATA_RUN.md) documents the authorized
+larger real-data run, verified coverage quarantine, bounded parallel capture,
+completion runner and four-model research-only training/inference. User-authorized
+offline fitting is separate from the original human-reviewed promotion route
+described below; it never claims review, deployment or paper-action approval.
+
 Implemented on 2026-10-10. This connects existing extraction, feature,
 minute-outcome and baseline components. It is not a fitted market model,
 calibrated forecast, paper policy, API or dashboard.

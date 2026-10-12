@@ -1,5 +1,48 @@
 # MarketPulse checkpoint for the next agent
 
+## Latest override — 2026-10-12 real-data run
+
+The user explicitly confirmed data permissions, requested real dataset/model
+training, and approved whole-date quarantine for confirmed missing outcome
+boundaries. This supersedes the older rights hold below. Rights evidence is
+user attestation, not an independently verified grant. The larger private
+experiment covers 2018–2024 train, 2025 validation, Jan–Sep 2026 final test:
+13,176 planned company-day rows before exclusions. Fixed six stocks, separate
+SPY context, pre-open inputs and the fixed 1% minute-proxy target remain intact.
+
+Read [REAL_DATA_RUN](REAL_DATA_RUN.md) for policy, immutable contract identity,
+model methods and boundaries. Real Alpaca/Benzinga collection is running under
+Trailforge. The strict run stopped at 2018-05-02 after 498 rows; the authorized
+quarantine experiment preserves those captures, excludes whole failed dates
+with immutable evidence, and resumes collection. No real fitting results exist
+at this checkpoint. No failed/UNKNOWN authority record was erased or reset.
+
+The hidden `research-build` process writes private status/logs under
+`data/real-2018-2026`. Check `real-build-status.json`, owned process identity,
+SQLite counts and Trailforge receipts before restarting. Never run two builders
+against the same directory. The completion runner only fits a complete audited
+roster; errors/holds still stop it. The user also approved earlier-date story
+masking: strict raw duplicate evidence remains recorded, but complete duplicate-
+only rosters can enter explicitly authorized masked research fitting. Preprocessing
+uses earlier input metadata only, never future labels; training/vocabulary and
+final-test seals remain intact. See REAL_DATA_RUN for policy and scope. The new
+research-only fit/score path accepts HISTORICAL_APPROXIMATE, whereas the existing
+fixture API/dashboard still accept FIXTURE only. Do not mislabel the UI as real.
+
+Explicit user-authorized offline fitting is separate from human dataset quality
+promotion: research releases report human_dataset_reviewed=false and prohibit
+deployment/paper action. M03/M04/M05/M06/M08 stay open until their actual remaining
+criteria are met. The old agreed contract remains an unchanged historical draft.
+Later sections below retain their original dated stage evidence.
+
+Latest verification: 198 tests, lint and dependency checks passed. The source/
+documentation staged scan covered 25 paths with zero credential findings. At
+2026-10-12 06:34:36 UTC, real collection had 3,300 rows through 2020-03-27 and
+13 excluded date groups; fitting had not started. The masked build intent is
+recorded in REAL_DATA_RUN and the current private runtime status. Keep the
+computer awake for the managed run. Earlier source QA may overlap 2026 dates;
+the fit/selection test seal is not a claim of a never-inspected blind period.
+
 Last checked: 2026-10-11 (Asia/Karachi). This is a handoff record, not a claim
 that the whole product is built or a complete historical dataset is validated.
 M02 now has bounded live IEX/historical SIP access evidence.

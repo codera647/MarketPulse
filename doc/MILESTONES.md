@@ -1,5 +1,13 @@
 # GitHub delivery milestones
 
+2026-10-12 update: user-confirmed data rights now permit the larger private real
+collection, and the user approved verified whole-date coverage exclusions.
+Four-model research-only training and a completion runner are implemented;
+collection is in progress, not a completed empirical milestone. See
+[REAL_DATA_RUN](REAL_DATA_RUN.md). M03/M04/M05 remain open; the older held statuses
+below describe their prior stage. No human quality review or model performance
+is inferred from synthetic tests or source access.
+
 Requested on 2026-10-10: create the project repository on the user's GitHub
 and commit/push the code at each completed milestone. The private repository
 is [codera647/MarketPulse](https://github.com/codera647/MarketPulse), with

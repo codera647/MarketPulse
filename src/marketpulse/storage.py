@@ -146,6 +146,12 @@ CREATE TABLE IF NOT EXISTS dataset_rows (
   symbol TEXT NOT NULL,
   UNIQUE(contract_hash, session, symbol)
 );
+CREATE TABLE IF NOT EXISTS dataset_exclusions (
+  contract_hash TEXT NOT NULL,
+  session TEXT NOT NULL,
+  exclusion_hash TEXT NOT NULL,
+  PRIMARY KEY(contract_hash, session)
+);
 """
 
 

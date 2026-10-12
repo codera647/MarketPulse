@@ -18,6 +18,10 @@ OUTCOME_CONTRACT = "regular-minute-proxy/1"
 SOURCE = "alpaca_regular_minutes"
 
 
+class MissingOutcomeBoundary(ValueError):
+    """Validated response lacks one or more exact label-boundary minutes."""
+
+
 def outcome_binding(session: date, feed: str, adjustment: str, data_url: str) -> dict:
     if feed not in {"iex", "sip"} or adjustment not in {"raw", "split", "all"}:
         raise ValueError("invalid outcome feed or adjustment")
@@ -89,7 +93,7 @@ def regular_outcomes(raw: RawStore, hashes: list[str], binding: dict) -> dict:
     result = {}
     for symbol, bars in found.items():
         if window.market_open not in bars or last not in bars:
-            raise ValueError("missing exact opening or last regular minute")
+            raise MissingOutcomeBoundary("missing exact opening or last regular minute")
         opening, closing = bars[window.market_open][0], bars[last][1]
         result[symbol] = {
             "open": str(opening), "close": str(closing),
