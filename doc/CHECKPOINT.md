@@ -2,6 +2,20 @@
 
 ## Active v2 experiment — 2026-10-12
 
+Latest recovery evidence: the r2 builder stopped at 85/194 context queries when
+the June 2021 source attempt outlasted its five-minute lease. Its eight saved
+pages / 3,665 records were independently validated and reconciled under a
+separate COMPLETED/PASS native task. The original expired UNKNOWN remains held;
+no retry/reset or source refetch occurred. The r3 builder resumed and passed
+139/194 queries at 16:20 UTC (21:20 Pakistan). Recheck live status rather than
+treating this dated snapshot as current. Logs now use `v2-build-r3.*.log`.
+The explicit recovery CLI and negative/positive reconciliation regression test
+are implemented: all 17 v2 tests passed in 28.26 seconds; lint and dependencies
+pass. The full suite passed 223 tests in 610.30 seconds. All 194 context captures
+have matching positive receipts: 22,572 daily / 340,570 thirty-minute records,
+98 / 744 immutable pages. At 16:31 UTC the news stage had processed 560 of
+26,835 unique eligible texts. Real v2 training/results are not yet complete.
+
 The user approved applying class weighting, richer market/company features and
 financial-news meaning, then requested completion. See [RESEARCH_V2](RESEARCH_V2.md)
 and D25 in [DECISION](DECISION.md). V1 datasets/models/test report stay unchanged.

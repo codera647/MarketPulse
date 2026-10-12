@@ -1,6 +1,12 @@
 # GitHub delivery milestones
 
-Latest v2 software evidence, 2026-10-12: enriched/weighted research CLI, source
+Latest v2 recovery evidence, 2026-10-12: full suite passes 223 tests, lint and
+dependencies pass; all 194 real context captures are verified. The expired
+source attempt remains UNKNOWN with a separate complete-capture reconciliation
+receipt. News enrichment is running; real v2 training/results are not yet
+complete. See [RESEARCH_V2](RESEARCH_V2.md). No promotion gate is closed.
+
+Earlier v2 software evidence, 2026-10-12: enriched/weighted research CLI, source
 captures, financial sentiment, feature chunks, chronological model search and
 saved inference are implemented; 222 regression tests, lint and dependency
 checks pass. The authorized first real v2 run is still in source preflight.

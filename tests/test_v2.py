@@ -37,6 +37,8 @@ from marketpulse.v2_sources import (
     load_context,
     month_queries,
     premarket_values,
+    reconcile_capture,
+    reconciled_context,
     validate_pages,
 )
 
@@ -459,6 +461,64 @@ def test_context_feature_chunks_and_source_entity_projection(tmp_path):
             news["manifest_hash"],
             lambda event: None,
             entity_tags_hash=tags_hash,
+        )
+        == result
+    )
+
+
+def test_expired_capture_reconciliation_never_resets_or_refetches(tmp_path):
+    import time
+    from dataclasses import asdict
+
+    from trailforge.core import ConflictError
+    from trailforge.runtime import Harness
+
+    from marketpulse.storage import ExtractionStore
+    from marketpulse.v2_runtime import environment
+
+    query = month_queries(date(2025, 7, 1), date(2025, 7, 3))[0]
+    raw, artifacts = RawStore(tmp_path / "raw-context"), RawStore(tmp_path / "artifacts")
+    pages = FakeContextClient().pages(
+        "v2_market_context", "/v2/stocks/bars", query, "bars", max_pages=12
+    )
+    hashes = [raw.put(asdict(page)) for page in pages]
+    capture_hash = artifacts.put(
+        {"query": query, "pages": hashes, "records": len(validate_pages(raw, query, hashes))}
+    )
+    calls = []
+
+    def expire():
+        calls.append(1)
+        time.sleep(0.02)
+        return {"capture_hash": capture_hash}
+
+    with pytest.raises(ConflictError):
+        supervised(tmp_path, "context", query, expire, lambda result: None, lease=0.001)
+    key = digest({"stage": "context", "binding": {**query, "environment": environment()}})
+    job = ExtractionStore(tmp_path / "v2-jobs.sqlite3").get_job(key)
+    broken = artifacts.put({"query": query, "pages": hashes, "records": -1})
+    with pytest.raises(ValueError, match="incomplete"):
+        reconcile_capture(tmp_path, key, broken, evidence="Synthetic independent capture check")
+    result = reconcile_capture(
+        tmp_path, key, capture_hash, evidence="Synthetic independent capture check"
+    )
+    check_receipt(tmp_path, result)
+    assert reconciled_context(tmp_path, query) == result
+    assert result["source_refetched"] is False and calls == [1]
+    record = Harness(
+        tmp_path / "v2-trailforge.sqlite3",
+        tenant_id="local-demo",
+        resource_id=f"marketpulse:v2:{key}",
+        adapters=[],
+        tenant_limit=1000000,
+        global_limit=10000000,
+    ).inspect(job["run_id"])
+    assert record["state"] == "WAITING_HUMAN"
+    assert record["tasks"]["execute"]["status"] == "UNKNOWN"
+    assert record["tasks"]["execute"]["attempts"] == 1 and record["units_reserved"] == 1
+    assert (
+        reconcile_capture(
+            tmp_path, key, capture_hash, evidence="Synthetic independent capture check"
         )
         == result
     )

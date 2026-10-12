@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import math
 from dataclasses import asdict
 from datetime import date, timedelta
@@ -10,8 +11,8 @@ from zoneinfo import ZoneInfo
 
 from marketpulse.clock import parse_time
 from marketpulse.constants import STOCKS
-from marketpulse.storage import RawStore
-from marketpulse.v2_runtime import check_receipt, supervised
+from marketpulse.storage import ExtractionStore, RawStore, canonical_bytes, digest
+from marketpulse.v2_runtime import check_receipt, environment, supervised
 
 SECTOR_PROXY = {
     "AAPL": "XLK",
@@ -21,6 +22,131 @@ SECTOR_PROXY = {
     "XOM": "XLE",
     "WMT": "XLP",
 }
+
+
+def _reconciliation_table(root: Path):
+    store = ExtractionStore(root / "v2-jobs.sqlite3")
+    with store.connect() as db:
+        db.execute(
+            "CREATE TABLE IF NOT EXISTS v2_capture_reconciliations ("
+            "parent_job_key TEXT PRIMARY KEY, result_json TEXT NOT NULL)"
+        )
+    return store
+
+
+def reconcile_capture(root: Path, parent_key: str, capture_hash: str, *, evidence: str) -> dict:
+    """Explicit host reconciliation of a COMPLETE capture, not a retry/reset of UNKNOWN."""
+    from trailforge.runtime import Harness
+
+    if not isinstance(evidence, str) or not 1 <= len(evidence.strip()) <= 500:
+        raise ValueError("bounded independent source reconciliation evidence required")
+    index, artifacts = _reconciliation_table(root), RawStore(root / "artifacts")
+    job = index.get_job(parent_key)
+    if not job or not job["run_id"]:
+        raise ValueError("original source task missing")
+    old = Harness(
+        root / "v2-trailforge.sqlite3",
+        tenant_id="local-demo",
+        resource_id=f"marketpulse:v2:{parent_key}",
+        adapters=[],
+        tenant_limit=1000000,
+        global_limit=10000000,
+    ).inspect(job["run_id"])
+    input_value = old["goal"]["tasks"][0]["input"]
+    if (
+        old["goal"]["tasks"][0]["adapter_id"] != "marketpulse.v2_context/2"
+        or input_value.get("environment") != environment()
+    ):
+        raise ValueError("only matching-version context captures can be reconciled")
+    query = {k: v for k, v in input_value.items() if k != "environment"}
+
+    def no_execution():
+        raise ValueError("reconciliation must never repeat the original source effect")
+
+    # Let the native protocol retain an EXPIRED_ATTEMPT as UNKNOWN. Never resolve_unknown(RETRY).
+    try:
+        supervised(root, "context", query, no_execution, lambda result: None)
+    except ValueError:
+        pass
+
+    def check_parent():
+        record = Harness(
+            root / "v2-trailforge.sqlite3",
+            tenant_id="local-demo",
+            resource_id=f"marketpulse:v2:{parent_key}",
+            adapters=[],
+            tenant_limit=1000000,
+            global_limit=10000000,
+        ).inspect(job["run_id"])
+        if (
+            record["state"] != "WAITING_HUMAN"
+            or record["active"] is not None
+            or record["tasks"]["execute"]["status"] != "UNKNOWN"
+            or record["tasks"]["execute"]["error_code"] != "EXPIRED_ATTEMPT"
+        ):
+            raise ValueError("original source is not a retained expired UNKNOWN")
+
+    def verify_saved(result):
+        check_parent()
+        if result["capture_hash"] != capture_hash:
+            raise ValueError("reconciled capture identity mismatch")
+        saved = artifacts.get(capture_hash)
+        if saved["query"] != query or saved["records"] != len(
+            validate_pages(RawStore(root / "raw-context"), query, saved["pages"])
+        ):
+            raise ValueError("candidate capture is incomplete or disagrees with source pages")
+
+    check_parent()
+    verify_saved({"capture_hash": capture_hash})
+    binding = {
+        "query": query,
+        "parent_job_key": parent_key,
+        "parent_run_id": job["run_id"],
+        "capture_hash": capture_hash,
+        "evidence": evidence,
+        "original_authority_reset": False,
+        "source_refetched": False,
+    }
+    result = supervised(
+        root,
+        "context_reconciliation",
+        binding,
+        lambda: {
+            "capture_hash": capture_hash,
+            "original_held_run": job["run_id"],
+            "source_refetched": False,
+        },
+        verify_saved,
+    )
+    with index.connect() as db:
+        prior = db.execute(
+            "SELECT result_json FROM v2_capture_reconciliations WHERE parent_job_key=?",
+            (parent_key,),
+        ).fetchone()
+        if prior and json.loads(prior[0]) != result:
+            raise ValueError("source reconciliation already bound to different evidence")
+        db.execute(
+            "INSERT OR IGNORE INTO v2_capture_reconciliations VALUES (?,?)",
+            (parent_key, canonical_bytes(result).decode()),
+        )
+    return result
+
+
+def reconciled_context(root: Path, query: dict) -> dict | None:
+    parent_key = digest({"stage": "context", "binding": {**query, "environment": environment()}})
+    with _reconciliation_table(root).connect() as db:
+        row = db.execute(
+            "SELECT result_json FROM v2_capture_reconciliations WHERE parent_job_key=?",
+            (parent_key,),
+        ).fetchone()
+    if row is None:
+        return None
+    result = json.loads(row[0])
+    check_receipt(root, result)
+    saved = RawStore(root / "artifacts").get(result["capture_hash"])
+    if saved["query"] != query:
+        raise ValueError("source reconciliation query mismatch")
+    return result
 
 
 def month_queries(first: date, last: date) -> list[dict]:
@@ -138,7 +264,9 @@ def capture_context(root: Path, client, first: date, last: date, checkpoint) -> 
             ):
                 raise ValueError("v2 source replay differs")
 
-        results.append(supervised(root, "context", query, execute, verify))
+        results.append(
+            reconciled_context(root, query) or supervised(root, "context", query, execute, verify)
+        )
     return {
         "manifest_hash": artifacts.put({"captures": results, "feed": "sip", "adjustment": "raw"}),
         "queries": len(queries),

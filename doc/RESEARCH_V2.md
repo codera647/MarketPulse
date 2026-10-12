@@ -133,6 +133,33 @@ Get-Content data/research-v2-20261012/v2-build-r2.stderr.log -Tail 5
 
 Saved research inference accepts only a label-free input artifact:
 
+### Interrupted source capture recovery
+
+On 2026-10-12 the June 2021 30-minute capture finished writing eight immutable
+pages / 3,665 records, but its original Trailforge attempt exceeded the 300-second
+lease. That run is retained as `WAITING_HUMAN` / `UNKNOWN` / `EXPIRED_ATTEMPT`;
+its attempt and budget history were not reset. Independent inspection verified
+the complete pagination chain, query bounds, source provenance, record count,
+unique timestamps and finite OHLC/volume before resuming collection.
+
+The explicit `research-v2-reconcile` command verifies an already-complete
+capture under a separate native execute/verify task and records its positive
+receipt in `v2_capture_reconciliations`. It neither refetches the source nor
+turns arbitrary UNKNOWN attempts into successful original runs. An incomplete
+or mismatched candidate is rejected; normal unregistered held tasks still stop.
+Keep the original held run and the child receipt together for audit. The resumed
+builder uses `v2-build-r3.stderr.log` / `.stdout.log`.
+
+```powershell
+.venv\Scripts\python.exe -m marketpulse.cli research-v2-reconcile `
+  --data-dir data/research-v2-20261012 `
+  --parent-job-key <expired-context-job-key> `
+  --capture-hash <independently-inspected-complete-capture-hash> `
+  --evidence "<bounded dated reconciliation evidence>"
+```
+
+### Saved inference
+
 ```powershell
 .venv\Scripts\python.exe -m marketpulse.cli research-v2-predict `
   --data-dir data/research-v2-20261012 `
