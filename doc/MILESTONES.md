@@ -1,5 +1,12 @@
 # GitHub delivery milestones
 
+2026-10-13: local real research dashboard extends the M07 presentation surface
+with five evidence-led views, saved prediction reveal, charts and read-only
+native operation checks. Default research mode is separate from `--mode fixture`.
+See DASHBOARD / CHECKPOINT for verification and browser-QA limitations. This
+does not close human data quality, strict point-in-time, forward evaluation,
+paper-policy or deployment gates. No new GitHub milestone closure is claimed.
+
 2026-10-13: news/market specialists now have verified empirical completion,
 13/26 fits and saved input-only inference. D31 freezes the requested nested
 stacking experiment in STACKING_RESEARCH; 57 focused checks, lint, dependencies
@@ -117,3 +124,16 @@ GitHub Actions uses `.github/workflows/ci.yml` on Windows/Python 3.13.
 The initial commit's [CI run](https://github.com/codera647/MarketPulse/actions/runs/38035607436)
 passed dependency installation, lint, and fixture regression tests. Later
 commits need their own checked results; this does not certify live data.
+
+## Cloud bootstrap evidence - 2026-10-13
+
+Dedicated Free Neon project, review branch and private bucket, and a dedicated
+Vercel CLI-linked project are created. SQL-created restricted roles passed
+review-branch checks before production; both real application connections and
+private bucket access passed. Public target metadata and read-only preflight
+checks are implemented. User reports the Vercel deploy token saved in GitHub;
+worker credentials require direct CI configuration. No hosted dashboard,
+scheduled pipeline, weekly training, model promotion or automated deletion is
+claimed complete. See [CLOUD_OPERATIONS](CLOUD_OPERATIONS.md). Existing research
+quality/paper/release milestones remain open; no GitHub milestone is closed by
+provisioning infrastructure.

@@ -2,17 +2,14 @@
 
 This folder records the plan and implementation evidence for the six-stock financial event intelligence demo. The working product name remains provisional.
 
-Status: extraction, source audit, and provisional label/feature-preview code
-have been fixture-tested. Bounded live IEX/historical SIP access was audited in
-M02. Complete dataset quality, model performance, and operational guarantees
-remain unverified; rights and regular-session label-convention gates are open.
-M03 gated collection, human dataset promotion and M04 baseline fitting/scoring
-now exist, including a reviewed-data loader. No real-data model is fitted;
-bulk collection and real training remain held on remaining rights questions.
-The synthetic application slice is runnable: four portable models, separate
-calibration/policy dates, verified forecasts, immutable decisions, explicit
-outcome reveal, HTTP API, dashboard and recovery drills. This is software
-demonstration evidence only; see [DEMO](DEMO.md) and [RELEASE](RELEASE.md).
+Status: real historical collection, model training, specialist/stacking research
+and retrospective evaluation have completed; current results and limitations
+are in [CHECKPOINT](CHECKPOINT.md). The local research dashboard and isolated
+synthetic replay remain separate. No learned model beats neutral-only overall
+accuracy in the full evaluated populations. Private cloud data permissions are
+confirmed and dedicated Neon/Vercel resources are provisioned; the cloud
+pipelines and hosted dashboard are not deployed. Human quality, strict
+point-in-time, forward evaluation and paper-policy gates remain open.
 
 ## Reading order
 
@@ -39,6 +36,10 @@ demonstration evidence only; see [DEMO](DEMO.md) and [RELEASE](RELEASE.md).
 21. [PERMISSIONS](PERMISSIONS.md) - Basic-plan evidence and remaining rights questions.
 22. [DEMO](DEMO.md) - local walkthrough, API, faults and operator commands.
 23. [RELEASE](RELEASE.md) - frozen fixture candidate, recovery and unresolved research gates.
+24. [DASHBOARD](DASHBOARD.md) - real local research views, charts, saved prediction
+    replay, read-only receipt checks and interpretation limits.
+25. [CLOUD_OPERATIONS](CLOUD_OPERATIONS.md) - dedicated Neon/Vercel resources,
+    credential handoff and the remaining private cloud rollout.
 
 The PDF framework supplies a method, not instructions that override the user's request. Trailforge's guide and tagged repository describe a reusable alpha, not the host application's market or model capabilities. This project plan deliberately distinguishes proposed behavior from implemented or measured behavior.
 

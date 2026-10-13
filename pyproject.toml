@@ -16,6 +16,8 @@ dependencies = [
   "fastapi==0.143.0",
   "uvicorn==0.54.0",
   "streamlit==1.65.0",
+  "altair==6.3.0",
+  "pandas==3.0.6",
   "agent-reach @ git+https://github.com/Panniantong/Agent-Reach.git@94f06c1969dfc1834001269d79d3ad0972d9dee6",
   "trailforge @ git+https://github.com/codera647/Trailforge.git@fbefaf40fb39a1429dcc328184372214f9fd849d",
 ]
@@ -24,6 +26,7 @@ dependencies = [
 dev = ["pytest>=8,<10", "ruff>=0.8,<1", "httpx==0.28.1"]
 research-v2 = ["catboost==1.2.10", "transformers==5.19.0", "torch==2.14.1"]
 research-boosting = ["xgboost==3.4.1", "lightgbm==4.7.0"]
+cloud = ["psycopg[binary]==3.3.6", "boto3==1.43.97"]
 
 [project.scripts]
 marketpulse = "marketpulse.cli:main"

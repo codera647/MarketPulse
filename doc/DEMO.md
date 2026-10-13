@@ -17,7 +17,7 @@ In another terminal:
 
 ```powershell
 cd F:\MarketPulse
-.\.venv\Scripts\marketpulse dashboard --data-dir data/demo
+.\.venv\Scripts\marketpulse dashboard --mode fixture --data-dir data/demo
 ```
 
 Dashboard: http://127.0.0.1:8501. API: http://127.0.0.1:8000/docs.

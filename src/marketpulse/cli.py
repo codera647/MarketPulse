@@ -266,6 +266,9 @@ def main(argv: list[str] | None = None) -> int:
         command.add_argument("--data-dir", type=Path, default=Path("data/demo"))
         if name in {"serve", "dashboard"}:
             command.add_argument("--port", type=int, default=8000 if name == "serve" else 8501)
+        if name == "dashboard":
+            command.add_argument("--mode", choices=("research", "fixture"), default="research")
+            command.add_argument("--research-data-dir", type=Path, default=Path("data"))
     backup = commands.add_parser("demo-backup", help="stop other writers before fixture backup")
     backup.add_argument("--data-dir", type=Path, default=Path("data/demo"))
     backup.add_argument("--destination", type=Path, required=True)
@@ -506,7 +509,8 @@ def main(argv: list[str] | None = None) -> int:
             elif arguments.command in {"serve", "dashboard"}:
                 if not 1024 <= arguments.port <= 65535:
                     raise ValueError("port must be 1024 to 65535")
-                DemoService(arguments.data_dir).ready()
+                if arguments.command == "serve" or arguments.mode == "fixture":
+                    DemoService(arguments.data_dir).ready()
                 if arguments.command == "serve":
                     import uvicorn
 
@@ -519,12 +523,19 @@ def main(argv: list[str] | None = None) -> int:
                     import subprocess
 
                     environment = os.environ.copy()
-                    environment["MARKETPULSE_DEMO_DATA_DIR"] = str(arguments.data_dir.resolve())
+                    environment["MARKETPULSE_DASHBOARD_MODE"] = arguments.mode
+                    environment["MARKETPULSE_RESEARCH_DATA_DIR"] = str(
+                        arguments.research_data_dir.resolve())
+                    if arguments.mode == "fixture":
+                        environment["MARKETPULSE_DEMO_DATA_DIR"] = str(arguments.data_dir.resolve())
                     return subprocess.call([
                         sys.executable, "-m", "streamlit", "run",
                         str(Path(__file__).with_name("ui.py")), "--server.address=127.0.0.1",
                         f"--server.port={arguments.port}", "--server.headless=true",
-                        "--browser.gatherUsageStats=false"], env=environment)
+                        "--browser.gatherUsageStats=false", "--theme.base=dark",
+                        "--theme.primaryColor=#58ddbc", "--theme.backgroundColor=#10161d",
+                        "--theme.secondaryBackgroundColor=#151e27",
+                        "--theme.textColor=#e7edf4"], env=environment)
                 return 0
             else:
                 service = DemoService(arguments.data_dir)

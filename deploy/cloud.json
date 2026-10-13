@@ -1,0 +1,29 @@
+{
+  "schema": "marketpulse-cloud-bootstrap/1",
+  "vercel": {
+    "team_slug": "codera647s-projects",
+    "org_id": "team_75Ikyytg6OGvW0iRj2fKq0Gg",
+    "project_id": "prj_Gto0aVFyeStSCSyOezczGk8myTWx",
+    "project_name": "marketpulse",
+    "cli_version": "63.1.2"
+  },
+  "neon": {
+    "org_id": "org-quiet-heart-25678049",
+    "project_id": "weathered-art-74189441",
+    "region": "aws-us-east-1",
+    "database": "marketpulse",
+    "production_branch_id": "br-cool-fire-b7c9ge4z",
+    "review_branch_id": "br-restless-dawn-b7k4b3y1",
+    "private_bucket": "research-artifacts",
+    "reported_branch_limit_bytes": 536870912
+  },
+  "operations": {
+    "prediction_cutoff_timezone": "America/New_York",
+    "prediction_cutoff_local": "09:00",
+    "retraining_cycle": "weekly_batch",
+    "cloud_data_permissions_confirmed": true,
+    "schedules_enabled": false,
+    "model_auto_promotion_enabled": false,
+    "broker_orders_enabled": false
+  }
+}

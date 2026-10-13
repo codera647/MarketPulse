@@ -2,6 +2,13 @@
 
 Status: proposed modular-monolith design. One repository may run a scheduled worker, FastAPI process, and Streamlit UI; code boundaries do not require separate services.
 
+2026-10-13 dashboard extension: `dashboard_data.py` projects pinned verified
+empirical reports through read-only SQLite/content-addressed artifacts, and
+`research_ui.py` renders five research views. `ui.py` selects research or the
+preserved isolated `fixture_ui.py`; FastAPI still serves synthetic replay only.
+No research order/fit/provider endpoints are added. Older implementation-status
+paragraphs below describe the initial slice; CHECKPOINT is current evidence.
+
 Current implemented slice: extraction, source audit, and read-only provisional
 label/feature previews, plus the M03 separate regular-minute outcome ledger
 and gated immutable dataset batches described in [DATASET](DATASET.md).

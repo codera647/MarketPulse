@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 import subprocess
 from pathlib import Path
+from urllib.parse import unquote, urlsplit
 
 from dotenv import dotenv_values
 
@@ -16,15 +17,25 @@ def git(*args: str) -> bytes:
 def main() -> int:
     root = Path(git("rev-parse", "--show-toplevel").decode().strip())
     secrets = []
-    for name in (".env", ".evn"):
-        path = root / name
+    env_paths = sorted(set(root.glob(".env*")) | set(root.glob(".evn*")))
+    for path in env_paths:
+        if path.name == ".env.example":
+            continue
         if path.is_file():
             values = dotenv_values(path, interpolate=False)
-            secrets.extend(
-                value.encode()
-                for key, value in values.items()
-                if re.search(r"KEY|SECRET|TOKEN|PASSWORD", key, re.I) and value and len(value) >= 8
-            )
+            for key, value in values.items():
+                if not value:
+                    continue
+                if re.search(r"KEY|SECRET|TOKEN|PASSWORD", key, re.I) and len(value) >= 8:
+                    secrets.append(value.encode())
+                if re.search(r"URL|URI", key, re.I):
+                    try:
+                        password = urlsplit(value).password
+                    except ValueError:
+                        password = None
+                    if password:
+                        secrets.append(value.encode())
+                        secrets.append(unquote(password).encode())
     paths = [
         path.decode() for path in git("diff", "--cached", "--name-only", "-z").split(b"\0") if path
     ]
@@ -34,6 +45,7 @@ def main() -> int:
         rb"github_pat_[A-Za-z0-9_]{40,}",
         rb"AKIA[0-9A-Z]{16}",
         rb"sk-(?:proj-)?[A-Za-z0-9_-]{40,}",
+        rb"(?:nt_live_|nak_live_|nsk_live_|npg_)[A-Za-z0-9_-]{16,}",
     ]
     failures = []
     for path in paths:

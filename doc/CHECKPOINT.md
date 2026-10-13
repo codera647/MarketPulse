@@ -1,5 +1,110 @@
 # MarketPulse checkpoint for the next agent
 
+## Private cloud bootstrap - 2026-10-13
+
+User selected Neon Free, Vercel CLI, weekly batch retraining, daily forecasts
+using information available by 09:00 New York, and automatic safe storage
+retention. Private cloud storage/training and private display permissions are
+explicitly confirmed. No orders or automatic model promotion are authorized.
+
+Created dedicated Vercel `codera647s-projects/marketpulse`, ID
+`prj_Gto0aVFyeStSCSyOezczGk8myTWx`, linked and independently inspected through
+authenticated CLI 63.1.2. Created dedicated Neon MarketPulse project
+`weathered-art-74189441`, production branch `br-cool-fire-b7c9ge4z`, database
+`marketpulse`, PG17, aws-us-east-1; separate review branch
+`br-restless-dawn-b7k4b3y1`; production private `research-artifacts` bucket.
+Unrelated Vercel/Neon resources were untouched. Provider reports 512 MiB for
+this new branch, NOT an assumed 1 GB. Explicit suspend configuration was
+rejected; default Free configuration succeeded, no paid upgrade.
+
+No deployment, application-table migration, data upload, worker schedule, weekly
+refit, model promotion or retention deletion occurred. `.env` is unchanged; Vercel's link
+created ignored `.env.local`. CI credential handoff is required: the Vercel
+deployment skill forbids copying interactive login credentials into GitHub
+and requires the owner to configure protected CI credentials directly. Start
+with `VERCEL_TOKEN` in the repository's production environment; the user now
+reports it saved. Five worker secrets and the storage endpoint still require
+direct CI configuration. Never ask for token values in chat. See
+[CLOUD_OPERATIONS](CLOUD_OPERATIONS.md) for IDs,
+remaining credentials, exact implementation order and quota precautions.
+
+`deploy/cloud.json` stores public target metadata with schedules/orders/model
+promotion disabled. `python -m marketpulse.cloud_bootstrap` is a read-only,
+fail-closed key-presence/target check; it does not validate credentials or
+pretend the pipelines are implemented. Live preflight and tests are recorded
+below after execution. A fresh dashboard/fixture run now passes 47 tests in
+211.21s; the interrupted earlier run is not used as passing evidence. Actual
+browser screenshot/keyboard QA remains unverified.
+
+Restricted-role migration 0000 was tested on the separate review branch before
+production. SQL-created `marketpulse_reader` and `marketpulse_worker` have no
+administrator/bypassrls privileges or role memberships; reader is read-only by
+default. Real connections for both roles and private storage HEAD/ACL checks
+passed. No application tables are created/granted yet. Private credentials are
+saved in ignored `.env.cloud.local`; ignored `.env.cloud-migration.local` is
+owner-only migration authority and MUST NOT be uploaded to either platform.
+Two unused API-created administrator-default roles were removed without data
+deletion. A temporary connection exposed by a patch formatting error was
+rotated immediately, then its unused role removed; current restricted values
+were not displayed/committed/deployed. See CLOUD_OPERATIONS for the incident.
+
+New optional cloud dependencies are psycopg/binary 3.3.6 and boto3 1.43.97,
+with transitive lock pins. No dependencies enter the Vercel browser bundle.
+Credential scanner now covers every private dotenv variant and credentialed
+database URL/password fragments, as well as Neon token patterns. Six scanner
+regression checks are added; no secret values appear in scanner output.
+
+Final focused cloud/setup/scanner suite: 31 passed in 5.33s. Dashboard/fixture
+suite: 47 passed in 211.21s. Full suite was not rerun for this bootstrap.
+Repository lint and dependency checks pass. Private cloud connection checks
+passed without uploads; Vercel env list is empty, so no hosted-app credentials
+are configured yet. No cloud worker/deployment is claimed ready by these checks.
+Final staged inspection covers 26 paths, zero credential findings; staged
+whitespace validation passes. Private dotenv files and `.vercel` remain ignored,
+and user-owned `.agents` remains untracked/untouched. No existing GitHub
+milestone is closed by this dashboard/cloud-bootstrap evidence.
+
+## Research dashboard implementation - 2026-10-13
+
+The user requested a complete polished local dashboard using `.agents/skills`.
+The build-quality and human-copy skills informed layout, precise research-state
+copy, accessibility and regression checks. User-owned `.agents` files are left
+untouched and untracked. See [DASHBOARD](DASHBOARD.md) for scope and launch.
+
+The real stacking run completed at 12:18:24 Pakistan: 101 fits / 107 verified
+native tasks, 4,500 nested past-only OOF rows. Release
+`7fa2667f7268de276953112d6fa81e06c6315ba958e771786f4842b4cbe21951`
+selects the price CatBoost expert by later-2025 macro-F1, not the actual LR stack.
+The frozen 2026 retrospective run completed at 16:04:15 Pakistan: 1,104 rows,
+184 dates Jan 5–Sept 30; 100 native tasks verified COMPLETED/PASS. Report
+`617a7f51186f0cfd192af5b5862c6fa5254d9fc0bdf4732b350defdb6ef2deea`.
+These previously exposed dates are not a new blind test. Full-population stack
+accuracy 50.36%, selected CatBoost 36.78%, earlier XGBoost 40.13%, neutral-only
+51.72%. No learned model wins overall accuracy; no test-driven reselection.
+
+New read-only data projection verifies the pinned reports and native receipts,
+content hashes, complete six-company groups, class conventions, all saved model
+metrics and confusion matrices. Native storage validation is reused through
+read-only SQLite connections; no initializing Harness or training runs occur.
+No model binary deserialization, provider access, credentials or broker actions.
+
+Five Streamlit views: overview with monthly accuracy, class distribution,
+company/month heatmap and observed return series; comparisons/confusion/recall/
+calibration; saved prediction probabilities with explicit outcome reveal/reset;
+dataset and source provenance; all-task receipt checks and open release gates.
+Ticker/date/model/period filters, private local CSV exports, errors/empty states,
+responsive CSS, visible focus and reduced-motion support are implemented.
+Default `marketpulse dashboard` now opens research; `--mode fixture` preserves
+the isolated synthetic app. The FastAPI fixture contract is unchanged.
+
+Both real populations load and replay their metrics successfully; all five real
+views are being verified with Streamlit application tests. Local health returned
+HTTP 200. Browser automation was blocked; desktop/narrow screenshot and actual
+browser keyboard/hover QA are NOT verified. Verification results are recorded
+below when complete. No deployment, paper or human/PIT gate is closed.
+
+Older launch/preparation entries below are historical, not current status.
+
 ## Real stacking background launch - 2026-10-13
 
 Verified software was pushed as `99c9ddd` after 57 focused checks, lint,

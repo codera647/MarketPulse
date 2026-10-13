@@ -293,4 +293,22 @@ No new collection, FinBERT training, 2026 evaluation, deployment or trading.
 Chronological fitting is audited but historical source/checkpoint PIT caveats
 remain; this is exposed-date development, not a fresh final test.
 
+## D32 - Local evidence-led research dashboard
+
+2026-10-13: user requested a complete dashboard with charts and purposeful
+formatting using repository skills. Retain Streamlit and the existing Python
+boundaries; make research the default dashboard mode and preserve the synthetic
+workflow as `--mode fixture`. No hosted upload or external publication of private
+licensed datasets. Use the build-quality/human-copy skills for visual hierarchy,
+factual states, responsive controls, reduced motion and verification.
+
+Admit only pinned positively verified 2025 stacking development and 2026 frozen
+retrospective reports. Recompute filtered diagnostics from the saved arrays;
+do not rebalance evaluation labels, select a new winner or fit anything.
+Display baselines, sample sizes, leakage/availability caveats and open gates.
+Replay saved probabilities and reveal outcomes explicitly. No live price feed,
+portfolio profit fabrication, paper policy, model promotion or broker actions.
+Browser screenshot/keyboard/hover QA remains unverified because automation was
+blocked; do not describe application-test evidence as visual browser validation.
+
 For each open item, log owner, date, evidence link, considered options, effect on scope, and whether it blocks S1 feasibility, final-test lock, or release. Never convert an untested assumption into an achieved metric. The first explicit stop/go gate is data access and point-in-time quality; the second is model/coverage evidence before paper action; the third is recovery and demo readiness.

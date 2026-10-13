@@ -24,20 +24,35 @@ features from a saved snapshot; it does not read same-day outcomes.
 
 ## Run the local demo
 
+The [research dashboard](doc/DASHBOARD.md) reads the verified specialist/stacking
+reports and frozen 2026 retrospective evaluation. It includes model comparisons,
+monthly/company charts, confusion matrices, probability calibration, historical
+prediction reveal, dataset provenance and read-only Trailforge operation receipts.
+Private artifacts must already be present; none are included in the repository.
+
+```powershell
+.\.venv\Scripts\marketpulse dashboard
+```
+
+Open http://127.0.0.1:8501. No collection, training or broker actions run from
+the dashboard. Human quality/forward evaluation/deployment gates remain open.
+
+For the separate **synthetic** demo:
+
 ```powershell
 cd F:\MarketPulse
 .\.venv\Scripts\marketpulse demo-init --data-dir data/demo
 .\.venv\Scripts\marketpulse serve --data-dir data/demo
 # In a second terminal:
-.\.venv\Scripts\marketpulse dashboard --data-dir data/demo
+.\.venv\Scripts\marketpulse dashboard --mode fixture --data-dir data/demo
 ```
 
 Open [dashboard](http://127.0.0.1:8501) or [API docs](http://127.0.0.1:8000/docs).
 Choose a synthetic date/ticker, Forecast, then Reveal outcome. The
 [walkthrough](doc/DEMO.md) covers successes, a deliberate miss, holds,
 duplicate requests, recovery and backup/restore. All demo data are manufactured;
-no `.env` or provider API is used. This dashboard remains FIXTURE-only; it has
-not been connected to the real research models.
+no `.env` or provider API is used. Fixture mode remains isolated from the real
+research dashboard and its empirical results.
 See [release notes](doc/RELEASE.md) for setup, verification and remaining work.
 
 ## Extraction contract
