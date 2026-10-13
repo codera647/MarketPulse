@@ -279,4 +279,18 @@ unchanged. No new collection, transformer training, unavailable market
 pre-market feature, stacking or promotion. Stop monitoring after launch and
 give provisional estimates; report actual results only on verified completion.
 
+## D31 - Chronological nested stacking experiment
+
+2026-10-13: user authorized combining the completed experts. Freeze
+[STACKING_RESEARCH](STACKING_RESEARCH.md) before fitting: generate fresh
+2022/2023/2024 OOF forecasts with earlier-only nested expert selection and
+historical calibration. Do not reuse search-fold predictions or select experts
+using future outcomes. Fit a nine-probability Logistic Regression combiner;
+101 total fits, same source/labels/cutoff/744 later-2025 selection roster.
+Retain individual and averaged controls, actual stack even if it loses, and
+all old releases. Separate private root and positive Trailforge authority.
+No new collection, FinBERT training, 2026 evaluation, deployment or trading.
+Chronological fitting is audited but historical source/checkpoint PIT caveats
+remain; this is exposed-date development, not a fresh final test.
+
 For each open item, log owner, date, evidence link, considered options, effect on scope, and whether it blocks S1 feasibility, final-test lock, or release. Never convert an untested assumption into an achieved metric. The first explicit stop/go gate is data access and point-in-time quality; the second is model/coverage evidence before paper action; the third is recovery and demo readiness.

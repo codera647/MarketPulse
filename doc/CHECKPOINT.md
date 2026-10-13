@@ -1,5 +1,56 @@
 # MarketPulse checkpoint for the next agent
 
+## Chronological stacking preparation - 2026-10-13
+
+Latest user authorized stacking after specialist completion. D31 and
+[STACKING_RESEARCH](STACKING_RESEARCH.md) freeze a new 101-fit experiment
+before any real stack fit. New modules provide nested past-only expert
+selection, calibrated 2022-2024 out-of-sample probability inputs, a nine-input
+Logistic Regression combiner, seven matched later-2025 comparisons, and saved
+input-only composed inference. New CLI commands are research-stack-build and
+research-stack-predict. Separate private root data/stacking-20261013.
+No new extraction, FinBERT training, target/threshold/distribution changes,
+2026 outcome access, trading or deployment. Source/PIT/FinBERT corpus-date
+caveats and all human gates remain open. Earlier releases remain intact.
+
+Initial synthetic test caught resumed OOF selection metadata not being checked
+before cache reuse; fixed explicit request identity validation. Final comparison
+replay reconstructs averaged/baseline/stack metrics from verified fit artifacts
+and the exact evaluation roster. All 57 focused stacking/context/price/v2/
+regression/boosting tests passed in 633.87s with no warnings; lint, dependency
+checks and an eight-path staged credential scan pass (zero findings). Full
+suite was NOT rerun for D31. Synthetic stack completed 27 reduced-grid fits,
+saved inference, chronology rejection and completed resume without refitting.
+Source-roster dry inspection confirms 4,500 OOF examples (1,488/1,500/1,512
+in 2022/2023/2024). No real stacking results are claimed by this preparation
+entry. A launch/status entry must be recorded separately.
+
+## Verified news and market completion - 2026-10-13
+
+Verified on return: news finished 11:12:24 Pakistan / 06:12:24 UTC, 13/13 fits;
+market finished 11:14:45 Pakistan / 06:14:45 UTC, 26/26 fits. All native fit and
+release receipts COMPLETED/PASS. Every final saved model passed input-only
+probability replay; exact 744 input/row hashes match the price expert. No live
+owner/launcher PID or lock. Both selected balanced C=1 Logistic Regression;
+news temperature 2, market 1.5. No new final-test or promotion claim.
+
+News accuracy 42.87634%, equal-class recall 35.95942%, macro-F1 .34655859,
+UP/DOWN recall 31.00775%/26.5625%, log loss 1.10750807.
+Market Logistic accuracy 50.13441%, equal-class recall 36.42836%, macro-F1
+.36181380, UP/DOWN recall 17.05426%/27.34375%, log loss 1.22343782.
+Market LightGBM accuracy 50.53763%, macro-F1 .34762589, log loss 1.05304483.
+The majority baseline has 65.45699% accuracy, macro-F1 .26374222, log loss
+.89971312. No overall accuracy/probability-quality win. Price XGBoost remains
+the strongest specialist by macro-F1. These are exposed-date development results.
+
+News release `87f98591e878925de99e619d48528dc61b9f7fcd1fca8a1aed77fb162ec9539e`;
+report `03cd766c9b6b7b501fbe7807f96ff79d7b7e04a0684faf71aaa949a3feb7b823`;
+model `b92ce351407c1f9e0bcc5632cb93e7ebb942967a2875bda301e1a3b80151b005`.
+Market release `d0c151efe0472e6902332c54170d9a0c71642741970b141a769321edb2152ee6`;
+report `02dc814b9e82019cd72dde058d6318b5193721cf6a50c795c915fa89a2e11262`;
+selected model `cbe40525f51a871a38a65ee82937de8d296abfca67ac0fbda9460a37a6004e36`.
+Older running entries below are historical snapshots.
+
 ## News/market expert preparation - 2026-10-13
 
 User requested starting both remaining experts after price completion. D30 and

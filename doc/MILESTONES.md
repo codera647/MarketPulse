@@ -1,5 +1,12 @@
 # GitHub delivery milestones
 
+2026-10-13: news/market specialists now have verified empirical completion,
+13/26 fits and saved input-only inference. D31 freezes the requested nested
+stacking experiment in STACKING_RESEARCH; 57 focused checks, lint, dependencies
+and staged credential scan pass. Full suite was not rerun for D31. This does
+not close human quality, forward-test, paper or deployment
+requirements. No new GitHub milestone is claimed complete.
+
 2026-10-13: D29 price expert completed 10:15 Pakistan, 27 fits and all three
 saved classifiers positively verified; XGBoost selected by macro-F1 .400588,
 not overall accuracy (52.96% versus neutral-only 65.46%). D30 implements isolated

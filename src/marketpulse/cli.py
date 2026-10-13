@@ -223,6 +223,21 @@ def main(argv: list[str] | None = None) -> int:
     context_predict.add_argument("--data-dir", required=True, type=Path)
     context_predict.add_argument("--release-hash", required=True)
     context_predict.add_argument("--input-hash", required=True)
+    stack_build = commands.add_parser(
+        "research-stack-build", help="nested chronological expert stacking; no trading")
+    stack_build.add_argument("--source-v2-dir", required=True, type=Path)
+    stack_build.add_argument("--roster-dir", required=True, type=Path)
+    stack_build.add_argument("--rows-hash", required=True)
+    stack_build.add_argument("--source-release-hash", required=True)
+    stack_build.add_argument("--data-dir", required=True, type=Path)
+    stack_build.add_argument("--authorization-evidence", required=True)
+    stack_predict = commands.add_parser(
+        "research-stack-predict", help="saved composed stack inference"
+    )
+    stack_predict.add_argument("--source-v2-dir", required=True, type=Path)
+    stack_predict.add_argument("--data-dir", required=True, type=Path)
+    stack_predict.add_argument("--release-hash", required=True)
+    stack_predict.add_argument("--input-hash", required=True)
     regression_predict = commands.add_parser(
         "research-regression-predict", help="saved input-only regression inference")
     regression_predict.add_argument("--source-v2-dir", required=True, type=Path)
@@ -259,6 +274,26 @@ def main(argv: list[str] | None = None) -> int:
     restore.add_argument("--destination", type=Path, required=True)
     restore.add_argument("--manifest-hash", required=True)
     arguments = parser.parse_args(argv)
+
+    if arguments.command in {"research-stack-build", "research-stack-predict"}:
+        from marketpulse.stacking_pipeline import build, saved_predict
+
+        try:
+            if arguments.command == "research-stack-build":
+                result = build(
+                    arguments.source_v2_dir, arguments.roster_dir, arguments.data_dir,
+                    arguments.source_release_hash, arguments.rows_hash,
+                    evidence=arguments.authorization_evidence,
+                    progress=lambda event: print(json.dumps(event), file=sys.stderr, flush=True))
+            else:
+                result = saved_predict(arguments.data_dir, arguments.source_v2_dir,
+                                       arguments.release_hash, arguments.input_hash)
+            print(json.dumps(result, indent=2, sort_keys=True))
+            return 0
+        except Exception as error:
+            print(f"stack research failed: {type(error).__name__}; inspect private receipts; "
+                  "no secrets or provider text logged", file=sys.stderr)
+            return 2
 
     if arguments.command in {"research-context-build", "research-context-predict"}:
         from marketpulse.context_expert_models import ExpertAPI
