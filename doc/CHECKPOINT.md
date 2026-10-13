@@ -22,7 +22,14 @@ loading inputs. News binding
 market binding `482cbb169b2680334b4dcfceb6409a00d115aae3c224cd4bcc9ed01dd3323434`.
 Private roots/status/log commands are in CONTEXT_EXPERTS. Temporary sleep guards
 are enabled; AC independently reports charging, 100%. No current results are
-claimed. Provisional estimate 5-15 minutes from launch, not a promise. Check
+claimed. Initial estimate was 5-15 minutes, but first observed input-loading
+throughput is slower with both jobs: at 11:04:30 each loaded 900/11,952 rows.
+Both owners are alive, CPU counters increasing, no error, idle-sleep guards on.
+Revised provisional estimate is 20-30 minutes remaining from 11:05 Pakistan,
+including preparation and fitting; not a completion promise. Actual fitting
+has not begun at this last observation and follows automatically. No active
+monitoring continues after handoff. Source/software/price evidence was pushed
+as `c100099`; datasets, logs and models remain private/local. Check
 status/lock/PID and native authority before restarting or reporting results.
 Stop after launch confirmation; wait for the user before stacking or further
 experiments. Commit/push covers verified software and price completion only;
