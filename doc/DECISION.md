@@ -169,4 +169,89 @@ Blank cleaned headlines have no fabricated sentiment; missingness is explicit.
 No corpus/label reduction, external upload, subscription, new test or quality
 promotion is authorized by this change. See RESEARCH_V2 for execution evidence.
 
+## D27 — Separate continuous-return regression research
+
+2026-10-13: user requested starting training after discussing CatBoost,
+histogram gradient boosting, Random Forest, Ridge and plain Linear Regression.
+Train these five families in a separate private directory; do not replace v1/v2.
+Reuse the verified 11,952-row 2018–2025 v2 roster and its 48 enriched numeric
+features. No new collection, FinBERT inference, TF-IDF addition, target clipping,
+row resampling or class weighting. Recover continuous return fractions from
+immutable audited base rows; check their identity and agreement with the
+original strict +/-1% classification labels. Target is the existing exact
+first/last regular-minute open-to-close proxy, not an auction or trading fill.
+
+Freeze 17 bounded configurations: ordinary least squares (1), Ridge alpha
+0.1/1/10/100 (4), Random Forest 150 trees with depth 6/12 and minimum leaf
+20/50 (4), histogram boosting 200 iterations with leaves 15/31 and L2 1/10
+(4), CatBoost 200 iterations with depth 4/6 and leaf L2 3/10 (4).
+Fixed seed 17, CPU thread limit two, no random internal early-stopping split.
+Use the same three expanding whole-date-embargo folds (2022, 2023, 2024) to
+choose settings within each family by mean RMSE, then MAE, then config digest.
+Fit final models on 10,458 train rows only. Retain early-2025 744 rows as an
+unused reserved segment, exclude the existing six-row date embargo, and compare
+on the exact same later-2025 744 selection inputs as v2. Select by RMSE then MAE,
+including zero-return and training-mean-return baselines. Preserve all models.
+
+Report MAE/RMSE in return fractions and percentage points, R-squared, and
+fixed +/-1% derived-class accuracy, balanced accuracy, macro-F1 and per-class
+precision/recall. Regression outputs are not calibrated class probabilities.
+All evaluation is RETROSPECTIVE DEVELOPMENT: these dates/outcomes were already
+used in classification research. No new blind/final test, test-driven v2
+replacement, live service, paper action or deployment promotion is authorized.
+FinBERT license and incomplete corpus/PIT/corporate-action audits remain.
+Source/fitting/replay/release work uses separate Trailforge receipts; no UNKNOWN
+attempt reset. Saved inference opens inputs only, never targets. Export linear
+and numeric tree models as versioned JSON, CatBoost as hash-checked native CBM;
+do not use executable pickle artifacts. See REGRESSION_RESEARCH.md for evidence.
+
+Operational amendment before any regression fitting: the first monolithic
+source-roster task took about 402 seconds and exceeded its 300-second lease.
+All 11,952 targets were saved, but that is not accepted verification. Keep the
+expired original as UNKNOWN; explicitly verify the complete candidate in
+300-row child tasks, followed by an independently checked assembly/reconciliation
+receipt. Future fresh source validation also uses bounded chunks. No model,
+target, data, split, search or selection-rule change is made by this correction.
+Live/unstarted/incomplete/mismatched source recovery is rejected; no original
+adapter retry, lease extension or authority reset is permitted.
+
+## D28 — Separate reproducible boosting-regressor comparison
+
+2026-10-13: user requested XGBoost, AdaBoost and "lightboost", interpreted as
+LightGBM, following the completed regression comparison. Keep the continuous
+return target, all 48 numeric features, exact six-company roster and D27 splits.
+Create `data/boosting-20261013`; never replace prior datasets/models/releases.
+No extraction, new FinBERT pass, resampling, target clipping or threshold tuning.
+Existing development outcomes are already exposed: this is retrospective
+development, NOT a new final test. Leave 2026 test data untouched.
+
+Before real fitting freeze twelve configurations, four per family:
+- XGBoost 200 estimators, depth 3/6 crossed with L2 1/10, learning rate .05,
+  squared-error objective, minimum child weight 20, CPU histogram trees,
+  subsample/column sampling 1, seed 17, two threads.
+- LightGBM 200 estimators, leaves 15/31 crossed with L2 1/10, learning rate .05,
+  L2 regression, minimum child samples 20, CPU GBDT, full row/column sampling,
+  no bagging, seed and subordinate seeds 17, two threads,
+  `deterministic=True`, `force_col_wise=True`.
+- AdaBoost.R2 200 estimators, tree depth 2/4 crossed with learning rate .05/.1,
+  minimum leaf 20, linear loss, fixed ensemble/tree seed 17. Its internal
+  bootstrap is part of the algorithm, not validation resampling.
+
+Use the same three expanding whole-date-embargo training folds; choose within
+family by mean RMSE, then MAE, then config digest. 36 fold fits plus three final
+fits on 10,458 rows, compared on exactly the prior 744 later-2025 selection rows.
+Retain unused early-2025 744 rows and six-row date embargo. Include zero-return
+and training-mean baselines; select RMSE then MAE then name even if baseline wins.
+Report MAE/RMSE, R-squared and fixed +/-1% derived-class metrics/UP/DOWN recall.
+
+Pin XGBoost 3.4.1 and LightGBM 4.7.0 without upgrading existing dependencies.
+Bind their versions into every boosting fit task and saved model; do not change
+existing v2 environment identities. Verify same-host fixed-seed repeatability
+with synthetic tests; bitwise results across OS/hardware/builds are not promised.
+Native UBJSON (XGBoost), text model (LightGBM), and portable weighted-median tree
+JSON (AdaBoost) have content hashes and fitted-versus-saved prediction checks.
+No pickle/joblib artifacts. Source, fit/replay and release work remain bounded
+Trailforge tasks, with no UNKNOWN reset. No calibrated probability, trading,
+paper authorization, deployment promotion or predictive improvement is implied.
+
 For each open item, log owner, date, evidence link, considered options, effect on scope, and whether it blocks S1 feasibility, final-test lock, or release. Never convert an untested assumption into an achieved metric. The first explicit stop/go gate is data access and point-in-time quality; the second is model/coverage evidence before paper action; the third is recovery and demo readiness.

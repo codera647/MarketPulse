@@ -136,13 +136,25 @@ frozen financial-news sentiment/events, class-weighted logistic ablations and
 CatBoost. It preserves v1 and uses only 2018–2025 development data; the exposed
 2026 period is not presented as a new untouched final test. The v2 implementation
 passes 230 regression tests, including 24 focused v2 checks;
-its first real build is in progress, not yet a
-measured accuracy improvement. Its FinBERT candidate is non-commercial research
+its real research run completed with verified saved models. See
+[V2_RESULTS](doc/V2_RESULTS.md): the selected CatBoost classifier has 53.63%
+selection accuracy, below the neutral-only baseline's 65.46%. Its FinBERT candidate is non-commercial research
 only and has an incomplete historical corpus audit.
 
 Commands are `research-v2-build` and `research-v2-predict`; setup, private status
 and saved label-free inference examples are in the runbook. All data/model
 artifacts remain ignored under `data/`, and paper actions stay prohibited.
+
+[REGRESSION_RESEARCH](doc/REGRESSION_RESEARCH.md) records the separately authorized
+continuous-return experiment: five regressor families, the same enriched numeric
+inputs and chronological splits, no new collection or FinBERT inference.
+Commands are `research-regression-build` and `research-regression-predict`.
+Real training completed with 56 verified fits; no trained model beat zero-return
+selection RMSE. Saved models/results remain research-only.
+[BOOSTING_RESEARCH](doc/BOOSTING_RESEARCH.md) records the separate fixed-seed
+XGBoost/LightGBM/AdaBoost comparison requested next, with the same data/splits.
+It completed with 39 verified fits and saved-model inference; none beat the
+zero-return baseline and all had zero UP/DOWN recall on development selection.
 
 ## Safe baseline software demo
 

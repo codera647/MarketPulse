@@ -1,5 +1,30 @@
 # GitHub delivery milestones
 
+2026-10-13: D27 regression completed with 56 verified fits and saved input-only
+inference. Full suite passed 240 tests; no model beats zero-return RMSE.
+No quality/paper/deployment gate closed. User's D28 boosting request is now
+implemented; 41 focused checks and the full 247-test suite passed.
+The full run reported 179 warnings including SQLite connection resource warnings.
+Real boosting completed 09:05:07 Pakistan with all 39 fits verified and saved
+input-only inference passed. None beats zero-return RMSE, all have zero UP/DOWN
+recall. Quality, human data approval, paper and deployment gates remain open. See
+[REGRESSION_RESEARCH](REGRESSION_RESEARCH.md) and [BOOSTING_RESEARCH](BOOSTING_RESEARCH.md).
+Earlier launch snapshots below are historical, not current completion state.
+
+2026-10-13 regression stage: five continuous-return model families, bounded
+chronological search, native verification and saved inference are implemented;
+nine focused checks pass and the full 239-test software suite is running.
+Real source preflight/training has started in `data/regression-20261013`.
+See [REGRESSION_RESEARCH](REGRESSION_RESEARCH.md). No regression quality claim
+or promotion gate is closed.
+
+V2 classification completed at 00:35:55 Pakistan on October 13. All 59 fits and
+the saved release have native COMPLETED/PASS verification; saved label-free
+inference passed. Results/limitations are in [V2_RESULTS](V2_RESULTS.md).
+The selected CatBoost classifier does not beat neutral-only overall accuracy.
+No new final-test claim or human/deployment approval. Historical snapshots below
+are retained, not current status.
+
 Latest v2 recovery evidence, 2026-10-12: guarded full suite passes 230 tests in
 578.29s; 24 focused v2 checks pass. Lint and
 dependencies pass; all 194 real context captures are verified. The expired

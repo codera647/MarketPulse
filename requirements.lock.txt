@@ -1,5 +1,5 @@
 # Tested Python 3.13 environment; install project with --no-deps after this file.
-# Fixture demo and private v2 research snapshot; not a cross-platform wheel guarantee.
+# Fixture demo and private v2/regression research; not a cross-platform wheel guarantee.
 agent-reach @ git+https://github.com/Panniantong/Agent-Reach.git@94f06c1969dfc1834001269d79d3ad0972d9dee6
 altair==6.3.0
 annotated-doc==0.0.5
@@ -39,6 +39,7 @@ joblib==1.6.0
 jsonschema==4.26.0
 jsonschema-specifications==2025.9.1
 kiwisolver==1.5.1
+lightgbm==4.7.0
 korean_lunar_calendar==0.4.0
 loguru==0.7.3
 markdown-it-py==4.2.0
@@ -103,6 +104,7 @@ urllib3==2.8.0
 uvicorn==0.54.0
 watchdog==6.0.0
 websockets==17.2
+xgboost==3.4.1
 yt-dlp==2026.8.19
 yt-dlp-ejs==0.8.0
 win32_setctime==1.2.0; sys_platform == "win32"

@@ -182,6 +182,31 @@ def main(argv: list[str] | None = None) -> int:
     v2_sentiment_reconcile.add_argument("--parent-job-key", required=True)
     v2_sentiment_reconcile.add_argument("--sentiment-hash", required=True)
     v2_sentiment_reconcile.add_argument("--evidence", required=True)
+    regression_build = commands.add_parser(
+        "research-regression-build", help="separate continuous-return research; no trading")
+    regression_build.add_argument("--source-v2-dir", required=True, type=Path)
+    regression_build.add_argument("--source-release-hash", required=True)
+    regression_build.add_argument("--data-dir", required=True, type=Path)
+    regression_build.add_argument("--authorization-evidence", required=True)
+    boosting_build = commands.add_parser(
+        "research-boosting-build", help="fixed-seed XGBoost/LightGBM/AdaBoost return research")
+    boosting_build.add_argument("--source-v2-dir", required=True, type=Path)
+    boosting_build.add_argument("--source-release-hash", required=True)
+    boosting_build.add_argument("--data-dir", required=True, type=Path)
+    boosting_build.add_argument("--authorization-evidence", required=True)
+    regression_predict = commands.add_parser(
+        "research-regression-predict", help="saved input-only regression inference")
+    regression_predict.add_argument("--source-v2-dir", required=True, type=Path)
+    regression_predict.add_argument("--data-dir", required=True, type=Path)
+    regression_predict.add_argument("--release-hash", required=True)
+    regression_predict.add_argument("--input-hash", required=True)
+    regression_reconcile = commands.add_parser(
+        "research-regression-reconcile-source", help="verify complete expired roster in batches")
+    regression_reconcile.add_argument("--source-v2-dir", required=True, type=Path)
+    regression_reconcile.add_argument("--data-dir", required=True, type=Path)
+    regression_reconcile.add_argument("--parent-job-key", required=True)
+    regression_reconcile.add_argument("--rows-hash", required=True)
+    regression_reconcile.add_argument("--evidence", required=True)
     full_demo = commands.add_parser("demo-init", help="build the full credential-free fixture demo")
     full_demo.add_argument("--data-dir", type=Path, default=Path("data/demo"))
     full_demo.add_argument("--seed", type=int, default=42)
@@ -205,6 +230,50 @@ def main(argv: list[str] | None = None) -> int:
     restore.add_argument("--destination", type=Path, required=True)
     restore.add_argument("--manifest-hash", required=True)
     arguments = parser.parse_args(argv)
+
+    if arguments.command == "research-boosting-build":
+        from marketpulse.boosting_pipeline import build
+
+        try:
+            result = build(
+                arguments.source_v2_dir, arguments.data_dir, arguments.source_release_hash,
+                evidence=arguments.authorization_evidence,
+                progress=lambda event: print(json.dumps(event), file=sys.stderr, flush=True))
+            print(json.dumps(result, indent=2, sort_keys=True))
+            return 0
+        except Exception as error:
+            print(f"boosting research failed: {type(error).__name__}; inspect private receipts; "
+                  "no secrets or provider text logged", file=sys.stderr)
+            return 2
+
+    if arguments.command in {"research-regression-build", "research-regression-predict",
+                              "research-regression-reconcile-source"}:
+        from marketpulse.regression_pipeline import build, reconcile_source, saved_predict
+
+        try:
+            if arguments.command == "research-regression-build":
+                result = build(
+                    arguments.source_v2_dir, arguments.data_dir, arguments.source_release_hash,
+                    evidence=arguments.authorization_evidence,
+                    progress=lambda event: print(json.dumps(event), file=sys.stderr, flush=True))
+            elif arguments.command == "research-regression-predict":
+                result = saved_predict(arguments.data_dir, arguments.source_v2_dir,
+                                       arguments.release_hash, arguments.input_hash)
+            else:
+                from marketpulse.v2_runtime import system_awake
+
+                with system_awake():
+                    result = reconcile_source(
+                        arguments.source_v2_dir, arguments.data_dir, arguments.parent_job_key,
+                        arguments.rows_hash, evidence=arguments.evidence,
+                        progress=lambda event: print(
+                            json.dumps(event), file=sys.stderr, flush=True))
+            print(json.dumps(result, indent=2, sort_keys=True))
+            return 0
+        except Exception as error:
+            print(f"regression research failed: {type(error).__name__}; inspect private receipts; "
+                  "no secrets or provider text logged", file=sys.stderr)
+            return 2
 
     if arguments.command in {"research-v2-build", "research-v2-predict", "research-v2-reconcile",
                               "research-v2-reconcile-sentiment"}:

@@ -1,6 +1,97 @@
 # MarketPulse checkpoint for the next agent
 
-## Active v2 experiment — 2026-10-12
+## Verified boosting completion — 2026-10-13
+
+User requested fixed-seed XGBoost, AdaBoost and LightGBM training after viewing
+regression results. D28 freezes 12 settings and 39 chronological fits before
+real fitting. Same six stocks, 48 numeric features, continuous targets and
+selection dates; separate root `data/boosting-20261013`. New model dependencies
+are pinned without changing old v2 environment identities. No new final test,
+trading, paper action or promotion. See [BOOSTING_RESEARCH](BOOSTING_RESEARCH.md).
+41 focused boosting/regression/v2 checks passed in 56.42s, lint/dependencies pass;
+Guarded full suite passed 247 tests in 516.36s, with 179 warnings including
+SQLite connection resource warnings (cleanup remains).
+Managed real job began 08:53:22 Pakistan, owner PID 10564.
+Completed 09:05:07 Pakistan: all 39 fold/final receipts COMPLETED/PASS;
+saved input-only inference verified separately for all three models and release.
+Build binding `3a67964ad2d018e78e8433fee05c5e0e11cfb7c6de059a89879b6822db6a5252`.
+Status `data/boosting-20261013/v2-status.json`; log `boosting-r1.stderr.log`.
+Release `7764534d2afe86583f17f324224ac55988dfbe98c3a799ec3a39f7f627988376`;
+report `1b1deb739ba76de4757c8d6b75b4ff5b6ede56e9be83feacaf7a20de0dc27dc1`;
+native run `b57b6b6e-0779-4512-91f6-036afb353716`, receipt
+`sha256:341ffb80945c9567376ad791ed3b9166917a848a5b57a9239bb94abf7809bc48`.
+Selection row/input hashes exactly match prior regression report.
+Selected **zero_return**, RMSE 1.267410pp. XGBoost RMSE 1.278242pp, accuracy
+65.4570%; LightGBM 1.281219pp/65.3226%; AdaBoost 1.269392pp/65.4570%.
+All three have zero UP/DOWN recall; XGBoost/AdaBoost outputs are all neutral,
+LightGBM has one false DOWN. No trained-model improvement; no new final test.
+Preserve all models/results and v1/v2. Do not rerun/reselect to conceal the result.
+
+## Verified regression completion — 2026-10-13
+
+D27's original five-model experiment completed 08:34:41 Pakistan, all 56 fits
+COMPLETED/PASS, saved label-free inference verified. Release:
+`5cf4aa68f67448cd38db28c76b1e8a890fc15bd0244af63f4a5c6b1c9ce6d0ab`.
+Report `63fef64ae75b1059c4cb2059bbd1a2fcaf732ba2d5bdc9a34b5a3f3b1be868ef`;
+native run `1a306532-8429-4cf9-bcac-2fc35e70ee33`, receipt
+`sha256:1bd1f3c8e30d8545f6423b3ee4a99e31783f370aa55906c92afbb2b9333c728f`.
+Selected **zero_return baseline** on RMSE: 1.267410 percentage points, versus
+best trained Random Forest 1.268477. No improvement in return RMSE; RF/CatBoost
+derived labels are all neutral. 10,458 train/744 selection/744 reserved examples.
+This is retrospective development, not a fresh blind final test.
+
+Source reconciliation child `f07a4b71-dd3b-42b3-b0cc-a9b1ab531b2c` passed,
+receipt `sha256:5b619fef5f4cba2337ef2d8be909aadd65ccfffac2c8a80f74754a8bcf051449`.
+Original `ac4b9d4a-9adf-4d7d-94ef-98fb0b61a69f` retains UNKNOWN/EXPIRED,
+one attempt/unit; no authority reset or original adapter retry.
+Prior full software suite passed **240 tests in 649.56s**, two SQLite resource
+warnings. Focused model/source-recovery checks passed 34 tests in 66.80s.
+V1/v2 releases remain unchanged. Details: [REGRESSION_RESEARCH](REGRESSION_RESEARCH.md).
+
+## Historical regression launch/recovery — 2026-10-13
+
+User requested starting regression training. D27 was recorded before fitting.
+New modules `regression_models.py` / `regression_pipeline.py` and CLI build/predict
+commands implement five families and a bounded 17-setting, 3-fold chronological
+comparison, with five final fits. All reuse the existing numeric inputs and
+continuous audited return targets; no extraction or FinBERT rerun occurs.
+Nine focused synthetic tests passed in 46.38s; lint/dependencies pass. Full
+239-test software suite passed in 633.41s. Source v1/v2 artifacts remain unchanged.
+An additional expired-source negative/positive recovery check is being run.
+
+Real managed run started at 08:03 Pakistan / 03:03 UTC, owner PID 13704.
+Directory `data/regression-20261013`, status `v2-status.json`, logs
+`regression-r1.stderr.log` / `.stdout.log`. Modeling binding:
+`b7a5f0e878986cc56f39f1b61b09357a47b459b82eeb4fca7b47cf7b30ee42de`.
+First run STOPPED before fitting: full source projection took about 402 seconds
+and exceeded its 300-second lease; no new Standby events were recorded.
+Complete 11,952-row candidate hash:
+`87d407b1c3f0fdfd797fca13876b8aeeeb6d1f4a5b993b9e60e84dbbd2dbcdc8`.
+Original native run `ac4b9d4a-9adf-4d7d-94ef-98fb0b61a69f`, job
+`8ac25ccb942b06d87a812732d43b1e93aa396987feb11a8f5bb1bf183470cde7`.
+Keep its UNKNOWN/EXPIRED_ATTEMPT; never reset/re-execute it. Source validation
+now uses 300-row native tasks and assembly. Explicit complete-candidate child
+reconciliation is required before resuming the same run. No model/data/target/
+split/search change. Check live lock/PID/status before any duplicate. AC was
+independently online, battery 100%. No regression result is claimed yet.
+See [REGRESSION_RESEARCH](REGRESSION_RESEARCH.md). No broker/paper authority.
+
+## Verified v2 classification completion — 2026-10-13
+
+V2 completed at 00:35:55 Pakistan (2026-10-12 19:35:55 UTC).
+Release `51bce00fd0ce0ea0146877884c36eaa09055d23eff6bc337d453f065579542d7`,
+report `ddc1dc0f6e6edd28b3193c2c37f438e44ac6b94e29e04c80112e3eeaa78aa44c`,
+dataset `a9af101ab249424e0f92cdf6629a5cd4cea5c16d89fc395e6fe1a399b98a2805`.
+Selected model `80fc55b5346c42fe2221ce80e1e612a982d43051bb8b2541598879b7e9b70557`.
+Release and all 59 fold/final fits passed native verification; label-free saved
+inference replay passed. V1 model hash stayed unchanged. CatBoost depth 6,
+200 trees, class weighting (move multiplier 1) was selected by macro-F1 on the
+same 744 later-2025 inputs: accuracy 53.63%, macro-F1 .3843. Majority accuracy
+65.46%; no overall-accuracy advantage. Detailed evidence: [V2_RESULTS](V2_RESULTS.md).
+No new final test, paper approval or deployment promotion. Earlier running
+snapshots below are historical and superseded by this completion record.
+
+## Historical v2 recovery — 2026-10-12
 
 Latest operational state, 18:13 UTC / 23:13 Pakistan: user confirmed AC/lid
 open and Win32 independently reports AC online. R7 had been suspended from

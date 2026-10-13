@@ -53,7 +53,7 @@ def reconciliation_store(root: Path):
 
 def retained_expired(root: Path, parent_key: str, stage: str) -> tuple[dict, dict, dict]:
     """Retain an expired original attempt without invoking either original adapter."""
-    if stage not in {"context", "sentiment"}:
+    if stage not in {"context", "sentiment", "regression_source"}:
         raise ValueError("unsupported capture reconciliation stage")
     job = ExtractionStore(root / "v2-jobs.sqlite3").get_job(parent_key)
     if not job or not job["run_id"]:
@@ -111,7 +111,7 @@ def environment() -> dict:
 
 class Artifacts(RawStore):
     def put_binary(self, content: bytes, suffix: str) -> str:
-        if suffix not in {".cbm"}:
+        if suffix not in {".cbm", ".ubj", ".lgb"}:
             raise ValueError("unsupported private model type")
         key = hashlib.sha256(content).hexdigest()
         path = self.root / key[:2] / (key + suffix)
@@ -124,10 +124,12 @@ class Artifacts(RawStore):
                 raise ValueError("binary artifact mismatch") from None
         return key
 
-    def binary_path(self, key: str) -> Path:
+    def binary_path(self, key: str, suffix: str = ".cbm") -> Path:
+        if suffix not in {".cbm", ".ubj", ".lgb"}:
+            raise ValueError("unsupported private model type")
         if len(key) != 64 or any(c not in "0123456789abcdef" for c in key):
             raise ValueError("invalid model digest")
-        path = self.root / key[:2] / (key + ".cbm")
+        path = self.root / key[:2] / (key + suffix)
         if hashlib.sha256(path.read_bytes()).hexdigest() != key:
             raise ValueError("model binary digest mismatch")
         return path

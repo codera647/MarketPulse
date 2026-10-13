@@ -2,8 +2,10 @@
 
 Specification recorded 2026-10-12 before v2 training, with D26's explicitly
 versioned headline-sentiment amendment before any v2 stock-model fitting.
-Status: implementation
-verified; first real run in progress, no v2 accuracy improvement claimed. The user authorized the combined
+Status: COMPLETE, verified retrospective development research. All 59 fits and
+the release passed native verification; saved label-free inference passed.
+See [V2_RESULTS](V2_RESULTS.md). No overall-accuracy improvement or new blind
+test is claimed. The user authorized the combined
 improvements. V1 is immutable and its measured negative result stays visible.
 
 ## Data and feature boundary
