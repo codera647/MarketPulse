@@ -1,5 +1,90 @@
 # MarketPulse checkpoint for the next agent
 
+## News/market expert preparation - 2026-10-13
+
+User requested starting both remaining experts after price completion. D30 and
+[CONTEXT_EXPERTS](CONTEXT_EXPERTS.md) freeze the experiments before fitting:
+news = cached FinBERT/event features plus Logistic Regression, 24 numeric
+features, four settings / 13 fits; market = SPY/sector/relative-context inputs,
+22 features, Logistic Regression / LightGBM, eight settings / 26 fits.
+Same immutable real source, target and 10,458/744/744 rosters. One CPU thread
+per job; separate private directories. No new collection, FinBERT pass, market
+pre-market invention, stacking, forward-test claim, paper/trading or promotion.
+54 focused context/price/v2/regression/boosting checks passed in 126.10s, no
+warnings; lint and dependencies pass. Earlier price release still loads under
+the generalized runner. Isolation, missingness, roles, fixed-seed saved replay,
+checkpoint identity, native completion and resume-without-refitting are covered.
+Full suite was NOT rerun in this turn. Both hidden jobs launched 11:02:40
+Pakistan / 06:02:40 UTC. News launcher/owner PIDs 13720/13776; market
+13960/19564. At 11:03:21 both positively verified their reused source and began
+loading inputs. News binding
+`5927493d204e723ab380969762f7ec62453b2441b6f76a53a25a9955a64bf603`;
+market binding `482cbb169b2680334b4dcfceb6409a00d115aae3c224cd4bcc9ed01dd3323434`.
+Private roots/status/log commands are in CONTEXT_EXPERTS. Temporary sleep guards
+are enabled; AC independently reports charging, 100%. No current results are
+claimed. Provisional estimate 5-15 minutes from launch, not a promise. Check
+status/lock/PID and native authority before restarting or reporting results.
+Stop after launch confirmation; wait for the user before stacking or further
+experiments. Commit/push covers verified software and price completion only;
+news/market empirical completion and all human promotion gates remain open.
+
+## Verified price expert completion - 2026-10-13
+
+Checked at the user's return: finished 10:15:00 Pakistan / 05:15:00 UTC,
+27/27 fits and release independently verified COMPLETED/PASS. All three final
+models separately passed saved input-only probability replay; selected release
+inference passed. No live PID/lock. Exact 744 input/row roster matches v2.
+Trained 10,458 rows, calibrated 744, compared 744. Selected XGBoostClassifier
+depth 3, 200 trees, balanced sample weights, temperature 1.5 by macro-F1.
+Accuracy 52.95699%, equal-class recall 40.34116%, macro-F1 .40058834;
+UP/DOWN recall 24.8062%/29.6875%. Majority accuracy 65.4570%, macro-F1 .26374222
+and equal-class recall 33.3333%; no overall-accuracy/probability-quality win.
+CatBoost accuracy 51.2097%, macro-F1 .37214306; Logistic 50.1344%/.37557627.
+Development-only results, not a fresh final test or proof of trading skill.
+
+Release `b129f626fc828541443ee8c9e1e93bd5b5e18b19e795c41ce6f047b9179392fa`;
+report `cd9a1fc43a7dc71fcfc44836136cb4185b47163f6b49e1978d8bac3e29ecdb2f`;
+selected model `42daae3e73209d42c08580a033749ec7eaf591c037ab3258e90594f4ece3d2b3`;
+native release run `74566eae-4c2c-4ba9-af44-8facff869741`, receipt
+`sha256:0a94c7a304142f6858d25c35064d5646fde641fd9c80ca2a49d109c8e46f1635`.
+Earlier launch entry below is historical. No human/paper/deployment gate closed.
+
+## Price expert background launch - 2026-10-13
+
+User requested ONLY starting the price expert, an ETA, then stopping active
+work until they return. Do not proceed to news/market experts or stacking yet.
+D29 and [PRICE_EXPERT](PRICE_EXPERT.md) freeze eight settings / 27 fits, twenty
+company-only lagged price, identity and pre-market inputs, no news/SPY/sector.
+CatBoostClassifier, XGBClassifier and Logistic Regression are new classifiers,
+not earlier regressors. Existing positive source receipts and 11,952 real
+development rows are reused; no new collection/FinBERT inference or `.env` read.
+Preserve 10,458 train / 744 calibration / six-row embargo / 744 selection.
+Earlier evaluation outcomes are exposed; no new final-test or deployment claim.
+
+47 focused price/v2/regression/boosting tests passed in 106.92s, no warnings;
+lint and dependency checks pass. Tests include fixed-seed saved probability
+replay, feature isolation, cutoff/role/calibration rejection, native receipts,
+source reuse and completed resume without refitting. A status-binding bug caught
+by the initial synthetic test was fixed before real launch. Full suite was NOT
+rerun this turn; previous 247-test result belongs to the earlier commit.
+
+Hidden independent launcher PID 16428 began 10:11:26 Pakistan / 05:11:26 UTC.
+Private root `data/price-expert-20261013`; status `v2-status.json`; logs
+`price-r1.stderr.log` / `price-r1.stdout.log`. Native owner may be a child PID;
+check status PID and lock/process before any restart. AC independently reports
+charging, 100%. Temporary Windows idle-sleep guard is retained, no power-plan
+change. All 11,952 inputs loaded; real training confirmed at 10:12:07 Pakistan,
+owner PID 16480, Logistic Regression first fold on 5,952 rows, 0/27 fits complete.
+Build binding `bf72e193117a50da56326479636ecb9a6f3678013f52aacb30553d0e83f21abc`.
+No accuracy/result is claimed yet. Estimated remaining 15-30 minutes on this
+two-core host (estimate, not a completion promise). Active monitoring stopped
+at the user's request after launch confirmation; source/code/docs remain local
+uncommitted changes until a verified completion handoff or explicit push request.
+The owner automatically saves/verifies models and completes the development
+report/release. When user returns, check status and native receipts, verify saved
+label-free inference, record honest results and commit/push completion evidence.
+Never reset UNKNOWN authority, rerun to hide poor results, or close human gates.
+
 ## Verified boosting completion — 2026-10-13
 
 User requested fixed-seed XGBoost, AdaBoost and LightGBM training after viewing

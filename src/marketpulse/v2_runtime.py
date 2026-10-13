@@ -240,7 +240,7 @@ def owned_run(root: Path, binding: dict, progress=None):
 
     def checkpoint(event):
         value = {
-            "schema": SCHEMA,
+            "schema": binding.get("schema", SCHEMA),
             **owner,
             "host_idle_sleep_guard_enabled": guard_enabled,
             "updated_at_utc": datetime.now(timezone.utc).isoformat(),

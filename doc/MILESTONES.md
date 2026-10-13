@@ -1,5 +1,13 @@
 # GitHub delivery milestones
 
+2026-10-13: D29 price expert completed 10:15 Pakistan, 27 fits and all three
+saved classifiers positively verified; XGBoost selected by macro-F1 .400588,
+not overall accuracy (52.96% versus neutral-only 65.46%). D30 implements isolated
+news/market experts, with 54 focused context/price/v2/regression/boosting checks,
+lint and dependency checks passing. Full suite was not rerun for D30.
+See PRICE_EXPERT / CONTEXT_EXPERTS / CHECKPOINT for exact launch/status evidence.
+No fresh blind-test, human quality, paper or deployment gate is closed.
+
 2026-10-13: D27 regression completed with 56 verified fits and saved input-only
 inference. Full suite passed 240 tests; no model beats zero-return RMSE.
 No quality/paper/deployment gate closed. User's D28 boosting request is now

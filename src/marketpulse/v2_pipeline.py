@@ -243,8 +243,12 @@ def _fit_and_score(
     *,
     calibration=None,
     phase="fold",
+    model_api=None,
 ) -> dict:
     artifacts = Artifacts(root / "artifacts")
+    fit_model = model_api.fit if model_api else fit_candidate
+    score_model = model_api.predict if model_api else score_candidate
+    calibrate_model = model_api.calibrate if model_api else calibrate_candidate
     binding = {
         "train_roster_hash": artifacts.put([row["base_row_hash"] for row in train]),
         "evaluation_roster_hash": artifacts.put([row["base_row_hash"] for row in evaluation]),
@@ -258,6 +262,10 @@ def _fit_and_score(
         "eval_input_hashes": artifacts.put([row["input_hash"] for row in evaluation]),
         "calibration_input_hashes": artifacts.put([row["input_hash"] for row in calibration or []]),
     }
+    if model_api:
+        binding.update({"schema": model_api.SCHEMA,
+                        "model_environment": model_api.model_environment(),
+                        "feature_names": list(model_api.FEATURE_NAMES)})
     if (
         not train
         or not evaluation
@@ -265,22 +273,33 @@ def _fit_and_score(
         or {row["base_row_hash"] for row in train} & {row["base_row_hash"] for row in evaluation}
     ):
         raise ValueError("v2 model evaluation overlaps training chronology")
+    if calibration and (
+        max(row["session"] for row in train) >= min(row["session"] for row in calibration)
+        or max(row["session"] for row in calibration) >= min(
+            row["session"] for row in evaluation)
+        or {row["base_row_hash"] for row in calibration}
+        & {row["base_row_hash"] for row in evaluation}
+    ):
+        raise ValueError("calibration must fall strictly between training and evaluation")
 
     def execute():
         checkpoint(
             {
                 "stage": "TRAINING_V2",
+                **({"schema": model_api.SCHEMA,
+                    "stage": f"TRAINING_{getattr(model_api, 'EXPERT', 'price').upper()}_EXPERT",
+                    "family": settings["family"]} if model_api else {}),
                 "phase": phase,
                 "candidate": candidate_id(settings),
                 "train_rows": len(train),
                 "evaluation_rows": len(evaluation),
             }
         )
-        model = fit_candidate(train, settings, artifacts)
+        model = fit_model(train, settings, artifacts)
         if calibration:
-            model = calibrate_candidate(model, calibration, artifacts)
+            model = calibrate_model(model, calibration, artifacts)
         model_hash = artifacts.put(model)
-        probabilities = score_candidate(model, evaluation, artifacts)
+        probabilities = score_model(model, evaluation, artifacts)
         prediction_hash = artifacts.put(
             {
                 "model_hash": model_hash,
@@ -312,7 +331,7 @@ def _fit_and_score(
         ):
             raise ValueError("v2 model training/calibration identity changed")
         # Recompute from saved coefficients/binary, never refit during VERIFY.
-        replay = score_candidate(model, evaluation, artifacts)
+        replay = score_model(model, evaluation, artifacts)
         predictions = artifacts.get(result["prediction_hash"])
         if (
             predictions["model_hash"] != result["model_hash"]

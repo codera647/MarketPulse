@@ -254,4 +254,29 @@ No pickle/joblib artifacts. Source, fit/replay and release work remain bounded
 Trailforge tasks, with no UNKNOWN reset. No calibrated probability, trading,
 paper authorization, deployment promotion or predictive improvement is implied.
 
+## D29 - Price-only expert first; background handoff
+
+2026-10-13: user authorized training the price expert only, then stopping active
+work until they return. Freeze the eight settings and 27 chronological fits in
+[PRICE_EXPERT](PRICE_EXPERT.md) before real fitting. CatBoostClassifier and
+XGBClassifier are challengers, with Logistic Regression and majority controls.
+Reuse positive source receipts and the existing 11,952 real development rows;
+twenty company-only price/identity/pre-market inputs, no news/SPY/sector features.
+No new collection, target change, new test claim, stacking or trading. Previous
+evaluation outcomes are exposed. Preserve earlier releases and future gates.
+Use separate native tasks and private root, verify saved probability replay,
+report an estimate and status command after confirming the background run.
+
+## D30 - Start isolated news and market experts; no stack yet
+
+2026-10-13: following verified price-expert results, user requested starting
+the news/market experts. Freeze [CONTEXT_EXPERTS](CONTEXT_EXPERTS.md) before
+fitting: 13 news fits (cached FinBERT features + Logistic Regression), 26 market
+fits (LightGBM + Logistic Regression), 24/22 explicitly isolated inputs.
+Reuse exact targets, chronological rosters and positive native source proofs.
+Run two independent hidden jobs at one CPU thread each. Keep old releases
+unchanged. No new collection, transformer training, unavailable market
+pre-market feature, stacking or promotion. Stop monitoring after launch and
+give provisional estimates; report actual results only on verified completion.
+
 For each open item, log owner, date, evidence link, considered options, effect on scope, and whether it blocks S1 feasibility, final-test lock, or release. Never convert an untested assumption into an achieved metric. The first explicit stop/go gate is data access and point-in-time quality; the second is model/coverage evidence before paper action; the third is recovery and demo readiness.

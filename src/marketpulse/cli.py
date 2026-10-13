@@ -194,6 +194,35 @@ def main(argv: list[str] | None = None) -> int:
     boosting_build.add_argument("--source-release-hash", required=True)
     boosting_build.add_argument("--data-dir", required=True, type=Path)
     boosting_build.add_argument("--authorization-evidence", required=True)
+    price_build = commands.add_parser(
+        "research-price-build", help="price-only classifier research; no trading")
+    price_build.add_argument("--source-v2-dir", required=True, type=Path)
+    price_build.add_argument("--roster-dir", required=True, type=Path)
+    price_build.add_argument("--rows-hash", required=True)
+    price_build.add_argument("--source-release-hash", required=True)
+    price_build.add_argument("--data-dir", required=True, type=Path)
+    price_build.add_argument("--authorization-evidence", required=True)
+    price_predict = commands.add_parser("research-price-predict", help="saved price-only inference")
+    price_predict.add_argument("--source-v2-dir", required=True, type=Path)
+    price_predict.add_argument("--data-dir", required=True, type=Path)
+    price_predict.add_argument("--release-hash", required=True)
+    price_predict.add_argument("--input-hash", required=True)
+    context_build = commands.add_parser(
+        "research-context-build", help="separate news/market expert classifiers; no stacking")
+    context_build.add_argument("--expert", required=True, choices=("news", "market"))
+    context_build.add_argument("--source-v2-dir", required=True, type=Path)
+    context_build.add_argument("--roster-dir", required=True, type=Path)
+    context_build.add_argument("--rows-hash", required=True)
+    context_build.add_argument("--source-release-hash", required=True)
+    context_build.add_argument("--data-dir", required=True, type=Path)
+    context_build.add_argument("--authorization-evidence", required=True)
+    context_predict = commands.add_parser(
+        "research-context-predict", help="saved specialist inference")
+    context_predict.add_argument("--expert", required=True, choices=("news", "market"))
+    context_predict.add_argument("--source-v2-dir", required=True, type=Path)
+    context_predict.add_argument("--data-dir", required=True, type=Path)
+    context_predict.add_argument("--release-hash", required=True)
+    context_predict.add_argument("--input-hash", required=True)
     regression_predict = commands.add_parser(
         "research-regression-predict", help="saved input-only regression inference")
     regression_predict.add_argument("--source-v2-dir", required=True, type=Path)
@@ -230,6 +259,48 @@ def main(argv: list[str] | None = None) -> int:
     restore.add_argument("--destination", type=Path, required=True)
     restore.add_argument("--manifest-hash", required=True)
     arguments = parser.parse_args(argv)
+
+    if arguments.command in {"research-context-build", "research-context-predict"}:
+        from marketpulse.context_expert_models import ExpertAPI
+        from marketpulse.price_expert_pipeline import build, saved_predict
+
+        try:
+            api = ExpertAPI(arguments.expert)
+            if arguments.command == "research-context-build":
+                result = build(
+                    arguments.source_v2_dir, arguments.roster_dir, arguments.data_dir,
+                    arguments.source_release_hash, arguments.rows_hash, model_api=api,
+                    evidence=arguments.authorization_evidence,
+                    progress=lambda event: print(json.dumps(event), file=sys.stderr, flush=True))
+            else:
+                result = saved_predict(arguments.data_dir, arguments.source_v2_dir,
+                                       arguments.release_hash, arguments.input_hash, model_api=api)
+            print(json.dumps(result, indent=2, sort_keys=True))
+            return 0
+        except Exception as error:
+            print(f"context research failed: {type(error).__name__}; inspect private receipts; "
+                  "no secrets or provider text logged", file=sys.stderr)
+            return 2
+
+    if arguments.command in {"research-price-build", "research-price-predict"}:
+        from marketpulse.price_expert_pipeline import build, saved_predict
+
+        try:
+            if arguments.command == "research-price-build":
+                result = build(
+                    arguments.source_v2_dir, arguments.roster_dir, arguments.data_dir,
+                    arguments.source_release_hash, arguments.rows_hash,
+                    evidence=arguments.authorization_evidence,
+                    progress=lambda event: print(json.dumps(event), file=sys.stderr, flush=True))
+            else:
+                result = saved_predict(arguments.data_dir, arguments.source_v2_dir,
+                                       arguments.release_hash, arguments.input_hash)
+            print(json.dumps(result, indent=2, sort_keys=True))
+            return 0
+        except Exception as error:
+            print(f"price research failed: {type(error).__name__}; inspect private receipts; "
+                  "no secrets or provider text logged", file=sys.stderr)
+            return 2
 
     if arguments.command == "research-boosting-build":
         from marketpulse.boosting_pipeline import build
