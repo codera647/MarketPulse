@@ -1,5 +1,36 @@
 # MarketPulse checkpoint for the next agent
 
+## Real stacking background launch - 2026-10-13
+
+Verified software was pushed as `99c9ddd` after 57 focused checks, lint,
+dependency checks and an eight-path credential scan passed. CI for this new
+commit is not verified. No human-quality or deployment milestone was closed.
+Hidden independent launcher PID 10440 started 11:53:31 Pakistan / 06:53:31 UTC;
+native owner PID 20112. Separate private root data/stacking-20261013 and
+stack-r1.stdout.log / stack-r1.stderr.log. D31 settings and chronology were
+frozen before this launch. AC reports charging, 100%; temporary idle-sleep
+guard enabled, no power-plan edits. No network or credentials are required.
+
+Source native authority independently checked COMPLETED/PASS: run
+`aad1c6c6-54ae-40f2-9ba7-c10c2af315f6`, receipt
+`sha256:90e47ea17ff316054bed0bade64f785daeddea4837db943401d3ee71ee677f96`.
+Build binding `a3e8c89ee520eb0e927c6e17a33be029128ef12e78a9d17e732aa2f24ca5d815`.
+At 11:58:10 Pakistan the owner was alive with increasing CPU, stage
+LOADING_STACK_INPUTS, 2,700 / 11,952 inputs loaded. Actual fitting has NOT
+begun at this observation; 101 fits follow automatically after preparation.
+No stacking result or completed empirical release is claimed. Observed loading
+throughput suggests roughly 20-40 minutes remaining, approximately 12:20-12:40
+Pakistan; provisional estimate, not a deadline or completion promise.
+
+Status command is in STACKING_RESEARCH. Stop active monitoring after launch
+handoff and await the user. On return inspect status, lock and owner/launcher
+before any restart; never reset held native authority. COMPLETE requires
+checking all 101 fit receipts, assembly proofs and release receipt, saved
+input-only composed inference, exact evaluation roster and reported metrics.
+Retain actual stack even if another candidate wins. All models/data/logs remain
+private/local. All human/PIT/forward-evaluation/paper/deployment gates stay open.
+Older preparation entries below are dated evidence, not current run status.
+
 ## Chronological stacking preparation - 2026-10-13
 
 Latest user authorized stacking after specialist completion. D31 and
