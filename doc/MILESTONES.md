@@ -145,3 +145,13 @@ scheduled pipeline, weekly training, model promotion or automated deletion is
 claimed complete. See [CLOUD_OPERATIONS](CLOUD_OPERATIONS.md). Existing research
 quality/paper/release milestones remain open; no GitHub milestone is closed by
 provisioning infrastructure.
+
+## Cloud release authentication correction - 2026-10-14
+
+Project-scoped Vercel CLI authentication now avoids the global --scope user
+lookup. Pre-pull preparation and staging still independently verify exact
+project/team IDs, private protection and reviewed commit; the production
+approval gate is unchanged. 76 focused tests pass and a local read-only
+scope-free exact-project check passes. Actions with the user's GitHub token
+still requires approval of the new commit and actual runner verification.
+No research/paper/release milestone is closed by this compatibility fix.

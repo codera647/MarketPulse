@@ -1,5 +1,31 @@
 # MarketPulse checkpoint for the next agent
 
+## Project-scoped Vercel token compatibility fix - 2026-10-14
+
+The user supplied Actions logs showing VERCEL_TOKEN is now nonempty, but CLI
+63.1.2 fails with User not found (404). Token settings show MarketPulse project
+scope and no expiry. The installed CLI's global --scope resolution invokes
+getUser before project lookup; project-scoped tokens do not allow user-level
+resources. Removed global --scope from release pull, staging API/deploy,
+authenticated HTTP verification and promotion; credential permissions are unchanged.
+
+A new pre-pull `cloud_deploy --prepare` validates reviewed main/repository/commit,
+exact environment project/team IDs and the remotely returned project ID, owner,
+web root and All Deployments protection. It then creates a missing ignored CLI
+link containing public IDs only. Existing mismatched links are refused without
+overwrite. API reads address exact project/deployment paths with explicit teamId;
+no account-wide discovery, auto-linking, token arguments or protection changes.
+The required production reviewer and same-artifact verification/promotion remain.
+
+Focused suite: **76 passed in 6.18s**, including new exact-target, empty-token,
+wrong-context, privacy, existing-link preservation and scope-free command tests.
+A bounded real read-only CLI API check without --scope verified the exact private
+project using the laptop's existing CLI login. This is NOT evidence that the
+GitHub project token works. The new Actions commit needs its own production
+approval before CI can validate that credential and the complete release path.
+No full suite, new deployment, training or schedule completion is claimed here.
+Earlier failed run IDs remain historical; rerunning old commits retains old code.
+
 ## Cloud state and hosted dashboard implementation - 2026-10-14
 
 Execution update: source commit `47c04dc0cddc722ae222be4b799fe510bf932d9f`

@@ -14,7 +14,7 @@ from marketpulse.vercel_cli import command
 def curl(url, path):
     result = subprocess.run(
         command() + ['curl', url + path,
-         '--scope', 'codera647s-projects', '--', '--max-time', '40', '--silent',
+         '--', '--max-time', '40', '--silent',
          '--show-error', '--write-out', '__HTTP__:%{http_code}'],
         capture_output=True, text=True, timeout=90,
     )

@@ -61,8 +61,14 @@ jobs:
         run: |
           npm install --global vercel@63.1.2
           python -m pip install -r deploy/requirements-preflight.txt
+      - name: Verify private target and prepare public project link
+        run: python -m marketpulse.cloud_deploy --prepare
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       - name: Pull exact production project settings
-        run: vercel pull --yes --environment=production --scope codera647s-projects
+        # --scope performs a user-level lookup denied to project-scoped tokens.
+        # The verified link and exact VERCEL_ORG_ID/PROJECT_ID select the target.
+        run: vercel pull --yes --environment=production
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       - name: Build the isolated web runtime
@@ -78,7 +84,7 @@ jobs:
           DEPLOYMENT_URL: ${{ steps.stage.outputs.url }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       - name: Promote the tested production artifact without rebuilding
-        run: vercel promote "$DEPLOYMENT_URL" --scope codera647s-projects
+        run: vercel promote "$DEPLOYMENT_URL"
         env:
           DEPLOYMENT_URL: ${{ steps.stage.outputs.url }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}

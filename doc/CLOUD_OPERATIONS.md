@@ -207,3 +207,20 @@ GitHub runner limits also need checks. No history has been deleted.
 
 Cloud provisioning alone closes no research-quality, paper-policy or release
 milestone. See [CHECKPOINT](CHECKPOINT.md) for the existing model evidence.
+
+## Project-scoped Vercel CI authentication
+
+Keep the deployment token scoped to MarketPulse; do not broaden its permissions
+to work around a CLI lookup. CLI 63.1.2 global --scope first resolves the user,
+which a project-scoped token cannot access. The release workflow instead uses
+reviewed VERCEL_PROJECT_ID/VERCEL_ORG_ID and a pre-pull verified link containing
+only those public IDs. Staging API reads explicitly include teamId. Pull, deploy,
+protected HTTP verification and promotion do not pass global --scope.
+
+Missing VERCEL_TOKEN now fails during preparation, before pull. Preparation
+refuses incorrect project/team environment IDs, mismatched existing links,
+non-main contexts, another remote project/root or unprotected production.
+No token values or private .vercel state are printed or uploaded as artifacts.
+Approve the new source commit's production deployment after reviewing the diff;
+rerunning a workflow for an older commit does not load this fix. Local login
+checks cannot prove the different GitHub-stored token works.
