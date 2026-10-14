@@ -3,9 +3,47 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import stat
 import tomllib
 from pathlib import Path
+
+FAILURE_CODES = {
+    'prebuilt output is missing or redirected': 'OUTPUT_MISSING_OR_REDIRECTED',
+    'prebuilt output exceeds inspection bound': 'ENTRY_LIMIT_EXCEEDED',
+    'prebuilt output contains a forbidden private file': 'PRIVATE_FILE_PRESENT',
+    'prebuilt output has a broken link': 'BROKEN_LINK',
+    'prebuilt output has a link outside its boundary': 'EXTERNAL_LINK',
+    'prebuilt output contains a special filesystem entry': 'SPECIAL_FILE',
+    'prebuilt output is not Build Output API version 3': 'UNSUPPORTED_OUTPUT_VERSION',
+    'prebuilt output has no configured function': 'FUNCTION_CONFIG_MISSING',
+    'prebuilt Python function handler is missing or redirected': 'PYTHON_HANDLER_INVALID',
+    'prebuilt dashboard is missing an application file': 'APPLICATION_FILE_MISSING',
+    'prebuilt Python function lacks the dashboard manifest': 'DASHBOARD_MANIFEST_MISSING',
+    'prebuilt output has no Python dashboard function': 'PYTHON_FUNCTION_MISSING',
+    'credential-free standalone build failed': 'PUBLIC_STANDALONE_BUILD_FAILED',
+    'public smoke source is redirected': 'PUBLIC_SOURCE_REDIRECTED',
+    'standalone smoke requires Linux for runner parity': 'LINUX_SMOKE_REQUIRED',
+}
+
+
+def failure_code(error: Exception) -> str:
+    # Never return arbitrary OS/JSON/TOML messages, paths, filenames or file contents.
+    return FAILURE_CODES.get(str(error), 'UNEXPECTED_READ_OR_PARSE_ERROR')
+
+
+def python_handler_file(function_root: Path, handler: str) -> Path:
+    if not isinstance(handler, str) or not handler:
+        raise ValueError('prebuilt Python function handler is missing or redirected')
+    if handler.endswith('.py'):
+        return function_root / handler
+    # @vercel/python emits module.symbol, e.g. vc__handler__python.vc_handler;
+    # the actual bundled file is vc__handler__python.py, not module.symbol.
+    module, separator, symbol = handler.rpartition('.')
+    if (not separator or not symbol.isidentifier()
+            or not re.fullmatch(r'[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*', module)):
+        raise ValueError('prebuilt Python function handler is missing or redirected')
+    return function_root / (module.replace('.', '/') + '.py')
 
 
 def inspect_output(root: Path) -> dict:
@@ -47,8 +85,8 @@ def inspect_output(root: Path) -> dict:
         if not str(function.get('runtime', '')).startswith('python'):
             continue
         python_functions += 1
-        handler = file.parent / function.get('handler', '')
-        if (not function.get('handler') or not handler.is_file()
+        handler = python_handler_file(file.parent, function.get('handler', ''))
+        if (not handler.is_file()
                 or not handler.resolve().is_relative_to(file.parent.resolve())):
             raise ValueError('prebuilt Python function handler is missing or redirected')
         found_manifest = False
@@ -79,6 +117,7 @@ def main():
         # OS/TOML/JSON errors can embed absolute paths or private content.
         print(json.dumps({'status': 'FAIL', 'check': 'standalone_prebuilt_package',
                           'error_type': type(error).__name__,
+                          'failure_code': failure_code(error),
                           'detail': 'Package verification failed; private details suppressed.'}))
         return 1
     print(json.dumps(report))

@@ -11,6 +11,7 @@ on:
       - 'deploy/requirements-build.txt'
       - 'src/marketpulse/cloud_deploy.py'
       - 'src/marketpulse/cloud_package.py'
+      - 'src/marketpulse/cloud_package_smoke.py'
       - 'scripts/verify_hosted_dashboard.py'
 
 permissions:
@@ -43,6 +44,15 @@ jobs:
           python -m pip check
       - name: Verify cloud and hosted contracts
         run: python -m pytest -q tests/test_cloud_bootstrap.py tests/test_cloud_connections.py tests/test_cloud_state.py tests/test_cloud_preflight.py tests/test_cloud_dashboard.py tests/test_cloud_deploy.py tests/test_cloud_package.py
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+      - name: Install pinned standalone build tools (no production credentials)
+        run: |
+          npm install --global vercel@63.1.2
+          python -m pip install --only-binary=:all: --no-deps --require-hashes -r deploy/requirements-build.txt
+      - name: Reproduce real standalone package on Linux before production approval
+        run: python -m marketpulse.cloud_package_smoke
 
   release:
     needs: verify

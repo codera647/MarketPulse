@@ -251,3 +251,15 @@ no broken or outside-package filesystem links, and no env/sqlite files. Counts
 and redacted status only are logged; never upload .vercel state as an Actions
 artifact. The actual Linux package still needs runner/deployment validation;
 passing mocked package fixtures is not deployment success.
+
+The actual Python builder's handler uses module.symbol syntax (for example,
+vc__handler__python.vc_handler). Verify its corresponding bundled .py module,
+not a nonexistent literal module.symbol filename. Missing modules remain fatal.
+Package failures now log a fixed failure_code, never arbitrary exception text.
+
+Before production approval, the release verify job also performs a real Linux
+standalone build in a temporary public-only workspace with cached fixture
+project settings. Only eight allowlisted web source files are copied; no local
+envs, data, models or credentials. The child environment does not inherit cloud
+or GitHub tokens. This tests actual packaging, not live credential/data access.
+No private build output is uploaded to GitHub artifacts and no guard is disabled.

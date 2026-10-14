@@ -1,5 +1,39 @@
 # MarketPulse checkpoint for the next agent
 
+## Real standalone handler verification and safe Linux smoke - 2026-10-14
+
+The user supplied a diagnostic note for release 38536345581 at source
+`3dd4418fdeaed47bc05c296e86f3ccde9d68d48c`. Independently checked actual jobs/logs:
+private credentials/pull and standalone build succeeded in 2s; our package
+verifier raised ValueError, stopping before upload. No bypass or Actions artifact
+upload was added. The pasted suggestion to upload .vercel/output is unsuitable
+for this public repo/private research; production review stays intact.
+
+The installed CLI 63.1.2 Python builder emits handler
+`vc__handler__python.vc_handler` with a real file `vc__handler__python.py`.
+Our checker incorrectly treated handler as a literal filename. It now interprets
+Python module.symbol handlers, still requiring the module file within the
+function bundle. Existing literal .py fixtures are supported; missing modules,
+broken/outside links, incomplete assets and private env/sqlite remain failures.
+Added fixed diagnostic failure codes; arbitrary error strings, paths, file
+lists, contents and environment values remain suppressed.
+
+Added a real credential-free Linux standalone build to the release's verify
+job before production approval. It copies only eight allowlisted public web
+files into an owned temporary workspace with public cached project settings and
+an empty fixture env file. It never pulls production credentials, deploys,
+uploads artifacts or copies research data. The child receives only PATH/locale,
+CI flags and public target IDs; cloud/GitHub/provider tokens are not inherited.
+Native Windows cannot reproduce Linux packaging (Docker is not running and only
+the Docker Desktop WSL distro is present); no services or installations were
+started to change that. Linux runner evidence is required before claiming fixed.
+
+Local focused checks: **102 passed, 3 Windows symlink skips in 3.64s**. Tests cover
+the real module.symbol handler, continued refusal of absent modules, fixed
+failure-code redaction, allowlisted smoke sources and credential-free child
+environment. Real Linux build results will be recorded when its new Actions
+run finishes. Full release success remains unverified.
+
 ## Explicit web entrypoint correction - 2026-10-14
 
 Source `733c78a02526e0c09b2e7a216b4c2700bc05b624` full GitHub verification

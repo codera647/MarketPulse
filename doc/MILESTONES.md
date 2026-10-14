@@ -188,3 +188,15 @@ resolve the configured module/object and verify the actual application's health
 response. Approval, private packaging and identity checks remain unchanged;
 actual new release completion still requires Actions evidence. No milestone is
 closed from passing unit tests alone.
+
+## Standalone verifier handler correction - 2026-10-14
+
+`3dd4418` completed standalone build but its pre-upload verifier failed. The
+reviewed builder emits module.symbol Python handlers, not literal filenames;
+the verifier now resolves that syntax without weakening file/boundary checks.
+Fixed diagnostic codes reveal failing conditions without private traces/data.
+The release verify job now builds the real standalone package on Linux from
+allowlisted public source, without secrets/deployments/artifact upload, before
+production approval. 102 local focused tests pass (3 Windows symlink skips);
+actual new runner/package/release evidence remains required. No milestone is
+closed on this source-only correction.
