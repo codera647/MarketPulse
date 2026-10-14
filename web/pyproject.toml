@@ -25,4 +25,4 @@ dependencies = [
 package = false
 
 [tool.vercel]
-entrypoint = "index.py"
+entrypoint = "index:app"

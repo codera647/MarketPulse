@@ -118,7 +118,25 @@ def test_dashboard_manifest_keeps_exact_existing_runtime_pins_and_entrypoint():
     assert set(manifest['project']['dependencies']) == requirements
     assert manifest['project']['requires-python'] == '>=3.13,<3.14'
     assert manifest['tool']['uv']['package'] is False
-    assert manifest['tool']['vercel']['entrypoint'] == 'index.py'
+    assert manifest['tool']['vercel']['entrypoint'] == 'index:app'
+
+
+def test_manifest_module_object_entrypoint_resolves_to_healthy_fastapi_application():
+    import importlib
+
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    root = Path(__file__).parents[1]
+    manifest = tomllib.loads((root / 'web/pyproject.toml').read_text())
+    module_name, object_name = manifest['tool']['vercel']['entrypoint'].split(':')
+    assert (root / 'web' / (module_name.replace('.', '/') + '.py')).is_file()
+    module = importlib.import_module('web.' + module_name)
+    application = getattr(module, object_name)
+    assert isinstance(application, FastAPI)
+    response = TestClient(application).get('/api/health')
+    assert response.status_code == 200 and response.json()['status'] == 'OK'
+    assert response.headers['cache-control'] == 'private, no-store'
 
 
 def test_ignore_rule_allows_web_manifest_but_excludes_research_and_secrets():

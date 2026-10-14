@@ -1,5 +1,27 @@
 # MarketPulse checkpoint for the next agent
 
+## Explicit web entrypoint correction - 2026-10-14
+
+Source `733c78a02526e0c09b2e7a216b4c2700bc05b624` full GitHub verification
+38533133523 passed **383 tests in 213.19s** and lint; release contract tests also
+passed on Linux. The release itself (38533133872) failed during build with
+PYTHON_ENTRYPOINT_NOT_FOUND. Our explicit manifest incorrectly used `index.py`.
+The builder requires module:object syntax, confirmed by the actual runner error
+and current official FastAPI documentation. Changed it to `index:app`, resolving
+web/index.py's existing FastAPI `app`, without changing functions, credentials,
+dependencies, privacy or approval policy. Tests now also parse the module:object
+value, resolve/import its actual module and FastAPI object, and verify private
+health response, rather than just comparing a configured filename string.
+
+Correction verification: **96 focused tests passed, 3 local Windows symlink
+tests skipped in 12.02s**; repository lint and whitespace checks pass. Linux
+release verification runs those real symlink cases. No full suite for this new
+source is claimed until its own GitHub run finishes.
+
+Earlier full-suite success is NOT release success. Build/package/deployment,
+private hosted HTTP/database verification and promotion of this new source still
+require the new approved Actions run. No new deployment or schedule is claimed.
+
 ## Standalone Python package correction - 2026-10-14
 
 Verified commit `7db3353ad246aa1b067e86baff653d16b9e63c49`: full GitHub CI run

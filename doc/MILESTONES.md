@@ -178,3 +178,13 @@ pass, 3 symlink tests require Linux privileges; the Linux release test job
 includes them. All 14 web dependency pins resolve for Linux/Python 3.13. Actual
 new runner deployment/HTTP/promotion evidence is still required. No empirical
 research, live forecast, weekly training or release milestone is closed here.
+
+## Web entrypoint format correction - 2026-10-14
+
+`733c78a` full GitHub verification passed 383 tests/lint; its production build
+rejected our explicit `index.py` entrypoint. It is now `index:app`, as required
+by the runner and official FastAPI deployment documentation. Regression tests
+resolve the configured module/object and verify the actual application's health
+response. Approval, private packaging and identity checks remain unchanged;
+actual new release completion still requires Actions evidence. No milestone is
+closed from passing unit tests alone.
