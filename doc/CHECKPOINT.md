@@ -2,6 +2,53 @@
 
 ## Cloud state and hosted dashboard implementation - 2026-10-14
 
+Execution update: source commit `47c04dc0cddc722ae222be4b799fe510bf932d9f`
+is pushed. Its full GitHub CI passed **333 tests in 192.91s**, job
+115699923012 / run 38517640954. The user approved the credential preflight;
+that run failed with a redacted ValueError (run 38517640915). Safe fixed-reason
+diagnostics are being added; do not infer that cloud worker credentials work.
+
+Both restricted local connections/private bucket checks pass. Published verified
+research privately: 2026 = 1,104 rows, projection
+`33df5cded1dd3f5a08f7089a6124e5ddda9c1c369e1e90e993e693c0c2bd6eb2`;
+2025 = 744 rows, projection
+`31c0e6f6406dc138660f500b4cb494a02977cad60b37aa9b6bd6cde7a6b0d12d`.
+Native checkpoint objects are registered, independently read-back verified.
+No raw article/model data is in public GitHub or public Actions artifacts.
+
+Vercel project settings now explicitly use Root Directory `web`, FastAPI and
+All Deployments Authentication. Reader URL was added server-side as a production
+Secret through CLI stdin, never copied to process arguments or printed. One
+staging attempt failed because the blanket .vercelignore reinclusion omitted
+web; explicit exclusions fix it. The successful upload contains 22.1 KiB / 19
+deployment files, Python 3.13, remote build 7s; platform builder uses CLI 62.7.0
+(local invocation remains reviewed 63.1.2). Deployment
+`dpl_36tbSkhvYNPVDczHT8z9ZEEMDj8C` / URL
+`https://marketpulse-pqk1csfjt-codera647s-projects.vercel.app` is READY and protected.
+CLI reported alias `https://marketpulse-codera647s-projects.vercel.app` even with
+--skip-domain; do not assume staging was unaliased from the flag alone.
+
+Hosted verification passes: unauthenticated API returns 302 to protection;
+authenticated CLI health, both exact real research populations and HTML/asset
+references work through the restricted reader API. Browser visual/keyboard QA
+is NOT_RUN. A literal newline in a Windows cmd curl argument caused the first
+probe to fail; removing it fixed the probe. Native Node CLI invocation avoids
+shell interpretation of encoded URLs/write-out arguments in the reusable helper.
+
+Deployment Actions workflow is now implemented: SHA-pinned checkout/Python/Node,
+secret-free focused tests, exact production environment approval, CLI 63.1.2,
+prebuilt isolated web build, independently verified project/All Deployments
+protection/reviewed commit, private HTTP/data verification, then promotion of
+that same production artifact. It has not yet executed successfully in Actions.
+This workflow is separate from the STILL UNIMPLEMENTED daily/weekly worker
+workflows. Do not describe the full scheduled service as complete.
+
+Latest focused suite (with deployment guards): **61 passed in 3.86s**. Lint now
+passes after import formatting; staged scan covers 12 paths with zero findings
+and whitespace checks pass. The new read-only credential diagnostic and
+deployment workflows need approval of their exact new commit. No credential
+failure is bypassed and no automatic schedule is enabled.
+
 User made `codera647/MarketPulse` public; connector independently confirms it.
 Source is public, not provider data or results. All six CI secrets (including
 VERCEL_TOKEN) and the storage endpoint were reported saved by the user. The

@@ -47,3 +47,12 @@ def test_redirect_is_not_accepted(monkeypatch):
     values = dict.fromkeys(('APCA_API_KEY_ID', 'APCA_API_SECRET_KEY'), 'test-only')
     with pytest.raises(ValueError, match='Alpaca'):
         cloud_preflight.inspect(values, request=lambda *a, **k: SimpleNamespace(status_code=302))
+
+
+def test_only_reviewed_fixed_failure_reason_is_reported(monkeypatch, capsys):
+    def fail(*args, **kwargs):
+        raise ValueError('Vercel project authentication failed')
+    monkeypatch.setattr(cloud_preflight, 'inspect', fail)
+    assert cloud_preflight.main() == 1
+    report = json.loads(capsys.readouterr().out)
+    assert report['safe_reason'] == 'Vercel project authentication failed'

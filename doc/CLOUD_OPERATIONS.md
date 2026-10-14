@@ -2,6 +2,29 @@
 
 ## Rollout in progress - 14 October 2026
 
+Private hosted dashboard is READY at
+https://marketpulse-codera647s-projects.vercel.app (sign in with the owner's
+Vercel account). Exact verified deployment:
+https://marketpulse-pqk1csfjt-codera647s-projects.vercel.app.
+All Deployments Vercel Authentication is independently configured; anonymous
+API access is denied (302). Authenticated health, both private research
+populations (744/1,104), and HTML/asset routes pass. This is historical research
+display, not an operating daily forecasting/training service. Browser visual
+and keyboard checks remain unrun.
+
+Full GitHub CI for 47c04dc passes 333 tests. The approved read-only cloud access
+run 38517640915 failed with ValueError; diagnostic improvement is in progress.
+Local database/storage and bounded local Alpaca news/IEX-bar reads pass. Do not
+enable live schedules until the CI credential and worker acceptance checks pass.
+
+`Release private dashboard` Actions workflow implements build/test/stage/verify/
+promote for reviewed main code, with production environment approval and
+step-scoped VERCEL_TOKEN. Only the isolated `web/` runtime is bundled; no pulled
+environment/build state or private API responses are uploaded as Actions artifacts.
+Its successful CI execution is pending. Daily forecast/outcome workers, weekly
+retraining and automatic retention are separate remaining work, not implemented
+by this deployment workflow.
+
 The repository is now public at the user's request; data/results remain private.
 The user reports all six production secrets, the storage endpoint, required
 reviewer and main-only environment restriction saved. Do not request values.

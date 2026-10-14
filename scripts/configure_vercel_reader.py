@@ -8,6 +8,7 @@ from pathlib import Path
 from dotenv import dotenv_values
 
 from marketpulse.cloud_connections import database_uri
+from marketpulse.vercel_cli import command
 
 
 def main():
@@ -20,7 +21,7 @@ def main():
     values = dotenv_values(root / '.env.cloud.local', interpolate=False)
     uri = database_uri(values['MARKETPULSE_DASHBOARD_DATABASE_URL'], 'marketpulse_reader')
     result = subprocess.run(
-        ['npx.cmd', '--offline', '--yes', f"vercel@{config['cli_version']}", 'env', 'add',
+        command() + ['env', 'add',
          'MARKETPULSE_DASHBOARD_DATABASE_URL', 'production', '--type', 'secret',
          '--scope', config['team_slug']],
         input=uri + '\n', text=True, capture_output=True, timeout=180, cwd=root,

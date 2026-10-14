@@ -1,7 +1,26 @@
-# Deploy only the reviewed small web application, never repository docs/data/models.
-*
-!web/
-!web/**
+# The project Root Directory is web. Preserve that directory in the upload;
+# blanket '*' plus reinclusion can omit it in the CLI's upload filter.
+data/
+.venv/
+.agents/
+.git/
+.github/
+doc/
+src/
+tests/
+scripts/
+deploy/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.env*
+.evn*
+*.sqlite3*
+*.log
+*.md
+pyproject.toml
+requirements.lock.txt
 web/.env*
 web/.evn*
 web/__pycache__/
