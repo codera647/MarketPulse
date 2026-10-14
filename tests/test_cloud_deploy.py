@@ -207,3 +207,99 @@ def test_hosted_cli_verification_does_not_request_user_scope(monkeypatch):
 
     monkeypatch.setattr(module.subprocess, 'run', run)
     assert json.loads(module.curl(URL, '/api/health')) == {'status': 'OK'}
+
+
+@pytest.fixture
+def promotable(reviewed, monkeypatch):
+    from marketpulse import cloud_deploy
+    (reviewed / '.vercel').mkdir()
+    (reviewed / '.vercel/project.json').write_text(
+        json.dumps({'projectId': 'approved', 'orgId': 'approved'}))
+    monkeypatch.setattr(cloud_deploy, 'inspect_output', lambda _: {'status': 'PASS'})
+    return reviewed
+
+
+def production_deployment():
+    return {'id': 'dpl_verified', 'projectId': 'approved', 'target': 'production',
+            'readyState': 'READY', 'meta': {'githubCommitSha': 'a'*40}}
+
+
+def test_project_scoped_promotion_checks_identity_and_waits_for_alias_completion(
+    promotable, monkeypatch
+):
+    from marketpulse import cloud_deploy
+    calls, waits = [], []
+    polls = 0
+
+    def run(args, timeout=180):
+        nonlocal polls
+        calls.append(args)
+        assert '--scope' not in args and '--token' not in args
+        if args[1].startswith('/v13/deployments/'):
+            return json.dumps(production_deployment())
+        if '--method' in args:
+            assert args == ['api', '/v10/projects/approved/promote/dpl_verified?teamId=approved',
+                            '--method', 'POST']
+            return '{}'
+        project = json.loads(private_project())
+        if timeout == 30:
+            polls += 1
+            project['lastAliasRequest'] = {'type': 'promote', 'toDeploymentId': 'dpl_verified',
+                                          'jobStatus': 'pending' if polls == 1 else 'succeeded'}
+        return json.dumps(project)
+
+    monkeypatch.setattr(cloud_deploy, 'run', run)
+    assert cloud_deploy.promote(promotable, URL, wait=waits.append) == 'dpl_verified'
+    assert waits == [2]
+    assert sum('--method' in args for args in calls) == 1
+
+
+@pytest.mark.parametrize('key,value', [
+    ('projectId', 'other'), ('target', 'preview'), ('readyState', 'ERROR'),
+    ('meta', {'githubCommitSha': 'b'*40}), ('id', 'invalid/id'),
+])
+def test_promotion_refuses_wrong_deployment_before_post(promotable, monkeypatch, key, value):
+    from marketpulse import cloud_deploy
+    deployment = production_deployment()
+    deployment[key] = value
+
+    def run(args):
+        assert '--method' not in args, 'must not promote an unverified deployment'
+        return (json.dumps(deployment) if args[1].startswith('/v13/deployments/')
+                else private_project())
+
+    monkeypatch.setattr(cloud_deploy, 'run', run)
+    with pytest.raises(ValueError):
+        cloud_deploy.promote(promotable, URL)
+
+
+@pytest.mark.parametrize('status', ['failed', 'skipped', 'pending', 'other'])
+def test_promotion_is_not_complete_merely_because_post_succeeded(
+    promotable, monkeypatch, status
+):
+    from marketpulse import cloud_deploy
+    posts, waits = [], []
+
+    def run(args, timeout=180):
+        if args[1].startswith('/v13/deployments/'):
+            return json.dumps(production_deployment())
+        if '--method' in args:
+            posts.append(args)
+            return '{}'
+        project = json.loads(private_project())
+        project['lastAliasRequest'] = {'type': 'promote', 'toDeploymentId': 'dpl_verified',
+                                      'jobStatus': status}
+        return json.dumps(project)
+
+    monkeypatch.setattr(cloud_deploy, 'run', run)
+    with pytest.raises(ValueError):
+        cloud_deploy.promote(promotable, URL, wait=waits.append)
+    assert len(posts) == 1
+    assert len(waits) == (0 if status in {'failed', 'skipped'} else 14)
+
+
+def test_promotion_follows_private_http_verification_in_workflow():
+    workflow = (Path(__file__).parents[1] / '.github/workflows/deploy-dashboard.yml').read_text()
+    assert 'run: vercel promote' not in workflow
+    assert workflow.index('run: python scripts/verify_hosted_dashboard.py') < workflow.index(
+        'run: python -m marketpulse.cloud_deploy --promote')

@@ -4,7 +4,9 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
+import time
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -57,17 +59,30 @@ def check_link(root: Path, config):
         raise ValueError('deployment target differs from linked project')
 
 
-def check_project(config):
+def check_project(config, timeout=None):
     # Global --scope resolves /v2/user first, which project-scoped tokens cannot
     # access. Address this project directly with its reviewed team ID instead.
-    project = json.loads(run(['api',
-        f"/v9/projects/{config['project_id']}?teamId={config['org_id']}"]))
+    args = ['api', f"/v9/projects/{config['project_id']}?teamId={config['org_id']}"]
+    project = json.loads(run(args) if timeout is None else run(args, timeout=timeout))
     protection = project.get('ssoProtection') or {}
     if (project.get('id'), project.get('accountId'), project.get('rootDirectory'),
         protection.get('deploymentType')) != (
         config['project_id'], config['org_id'], 'web', 'all'
     ):
         raise ValueError('private project/root/protection verification failed')
+    return project
+
+
+def checked_deployment(config, sha, url):
+    url = deployment_url(url)
+    deployment = json.loads(run(['api', '/v13/deployments/' + urlsplit(url).hostname
+                                + f"?teamId={config['org_id']}"]))
+    if (deployment.get('projectId'), deployment.get('target'),
+        deployment.get('readyState'), deployment.get('meta', {}).get('githubCommitSha')) != (
+        config['project_id'], 'production', 'READY', sha
+    ):
+        raise ValueError('staged production identity/commit differs')
+    return deployment
 
 
 def prepare(root: Path):
@@ -94,24 +109,53 @@ def stage(root: Path):
     inspect_output(root)
     url = deployment_url(run(['deploy', '--prebuilt', '--prod', '--skip-domain', '--yes',
                               '--meta', f'githubCommitSha={sha}'], timeout=900))
-    deployment = json.loads(run(['api', '/v13/deployments/' + urlsplit(url).hostname
-                                + f"?teamId={config['org_id']}"]))
-    if (deployment.get('projectId'), deployment.get('target'),
-        deployment.get('readyState'), deployment.get('meta', {}).get('githubCommitSha')) != (
-        config['project_id'], 'production', 'READY', sha
-    ):
-        raise ValueError('staged production identity/commit differs')
+    checked_deployment(config, sha, url)
     return url
+
+
+def promote(root: Path, url: str, *, wait=time.sleep):
+    config, sha = context(root)
+    check_link(root, config)
+    check_project(config)
+    inspect_output(root)
+    deployment = checked_deployment(config, sha, url)
+    identifier = deployment.get('id', '')
+    if not isinstance(identifier, str) or not re.fullmatch(r'dpl_[A-Za-z0-9]+', identifier):
+        raise ValueError('verified deployment ID is invalid')
+    # The high-level promote command performs another user lookup. Use its same
+    # project-scoped endpoint via CLI api; no broader token or rebuild is needed.
+    run(['api', f"/v10/projects/{config['project_id']}/promote/{identifier}"
+         + f"?teamId={config['org_id']}", '--method', 'POST'])
+    # POST acceptance alone is not completion. Read the exact project's alias job.
+    # Never repeat an uncertain POST; failure/timeout remains held.
+    for attempt in range(15):
+        project = check_project(config, timeout=30)
+        request = project.get('lastAliasRequest') or {}
+        if request.get('toDeploymentId') == identifier and request.get('type') == 'promote':
+            if request.get('jobStatus') == 'succeeded':
+                return identifier
+            if request.get('jobStatus') in {'failed', 'skipped'}:
+                raise ValueError('production alias promotion did not succeed')
+        if attempt < 14:
+            wait(2)
+    raise ValueError('production alias promotion completion is unverified')
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--prepare', action='store_true')
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument('--prepare', action='store_true')
+    mode.add_argument('--promote', action='store_true')
     args = parser.parse_args(argv)
     try:
         if args.prepare:
             prepare(Path.cwd())
             print(json.dumps({'status': 'VERIFIED_PRIVATE_PROJECT', 'writes': 'public_link_ids'}))
+            return 0
+        if args.promote:
+            identifier = promote(Path.cwd(), os.environ['DEPLOYMENT_URL'])
+            print(json.dumps({'status': 'PROMOTED', 'deployment_id': identifier,
+                              'rebuilt': False, 'alias_completion_verified': True}))
             return 0
         url = stage(Path.cwd())
         # CI metadata only, never credentials or private response bodies.

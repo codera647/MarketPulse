@@ -263,3 +263,12 @@ project settings. Only eight allowlisted web source files are copied; no local
 envs, data, models or credentials. The child environment does not inherit cloud
 or GitHub tokens. This tests actual packaging, not live credential/data access.
 No private build output is uploaded to GitHub artifacts and no guard is disabled.
+
+The high-level CLI promote command can also require user-level lookup with a
+project-scoped token. After the exact staged app passes private HTTP/data tests,
+`python -m marketpulse.cloud_deploy --promote` uses pinned CLI api for the exact
+project/deployment/team promotion endpoint, then polls that project's alias job
+for the verified deployment ID and succeeded status. It never broadens tokens,
+rebuilds a preview, accepts POST/queue as completion, or retries an uncertain
+promotion POST. Identity/privacy/package/commit checks run before promotion;
+unknown/failed/timeout states stay failed until independently investigated.

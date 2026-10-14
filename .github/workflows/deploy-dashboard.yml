@@ -103,7 +103,7 @@ jobs:
           DEPLOYMENT_URL: ${{ steps.stage.outputs.url }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       - name: Promote the tested production artifact without rebuilding
-        run: vercel promote "$DEPLOYMENT_URL"
+        run: python -m marketpulse.cloud_deploy --promote
         env:
           DEPLOYMENT_URL: ${{ steps.stage.outputs.url }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}

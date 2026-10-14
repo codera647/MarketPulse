@@ -200,3 +200,14 @@ allowlisted public source, without secrets/deployments/artifact upload, before
 production approval. 102 local focused tests pass (3 Windows symlink skips);
 actual new runner/package/release evidence remains required. No milestone is
 closed on this source-only correction.
+
+## Real package verification passes; promotion adapter - 2026-10-14
+
+`62d3f04` independently passes the real credential-free Linux standalone build
+and approved production build/package, staging and private HTTP/database checks.
+The final high-level promote command still fails its user lookup with the
+project-scoped token. A guarded CLI api promotion adapter now addresses the
+exact project/deployment/team without account-wide access, and verifies alias
+job completion after one POST. 113 local focused tests pass (3 Windows symlink
+skips), lint passes. Runner promotion still requires the new approved commit;
+no milestone or live/model-quality gate is closed prematurely.

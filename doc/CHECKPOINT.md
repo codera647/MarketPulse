@@ -1,5 +1,35 @@
 # MarketPulse checkpoint for the next agent
 
+## Actual Linux packaging passes; scoped promotion follow-up - 2026-10-14
+
+Source `62d3f04c7fd71d9502fa79b75db2aeae317f8544` release 38540302046:
+credential-free Linux smoke PASS (1,977 entries, zero links, one Python function,
+one dashboard manifest; no credentials/deployments/uploads). The actual reviewed
+production build/package check also PASS (1,978 entries), staged READY at
+`https://marketpulse-q9eqy3zgq-codera647s-projects.vercel.app`, and independently
+passed anonymous denial plus both exact real research API populations. Browser
+visual/keyboard QA remains NOT_RUN. Promotion alone failed with User not found
+(404) in the high-level CLI promote command. Do not label that run a successful
+release even though the staged private app works.
+
+The new promotion path uses pinned CLI api against the same documented
+POST /v10/projects/{projectId}/promote/{deploymentId} endpoint as CLI promote,
+with explicit teamId and no user lookup. Rechecks reviewed main/SHA, environment
+and local link, exact private project/root/protection, package and production
+READY deployment/commit before one POST. Requires a valid returned deployment
+ID. Bounded read-only polls require the exact promote alias job's toDeploymentId
+and succeeded status; acceptance/queue/failure/timeout is not completion. Never
+repeats an uncertain POST, rebuilds a preview or broadens the token. The workflow
+still performs private HTTP/data verification before promotion, with production
+approval intact. Actual project-scoped runner promotion is not yet proven.
+
+Local focused verification **113 passed, 3 Windows symlink skips in 3.68s**;
+lint passes. New tests reject wrong project, preview, failed deployment, wrong
+SHA/ID and non-completed alias jobs, and verify one POST/no secret arguments.
+Safe diagnostic codes and real secret-free Linux build tests remain enabled.
+No build state/private dataset is uploaded as a public artifact. Existing
+research/forward/weekly-training/retention gates are unchanged.
+
 ## Real standalone handler verification and safe Linux smoke - 2026-10-14
 
 The user supplied a diagnostic note for release 38536345581 at source
