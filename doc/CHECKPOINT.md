@@ -1,5 +1,30 @@
 # MarketPulse checkpoint for the next agent
 
+## GitHub Python build tooling correction - 2026-10-14
+
+Independently inspected Actions for `f28bb02b89e298a136a118ade6c29542382cbd27`:
+full verification run 38525537350 passed **361 tests in 376.68s** plus lint.
+Release run 38525537117 verified the exact private target with the GitHub-stored
+project-scoped token and completed production pull. Thus the user-lookup fix
+works on the runner. Build then failed with `[UV_ERROR] uv is required but was
+not found in PATH`; staging, private HTTP verification and promotion were skipped.
+No successful Actions release is claimed for that commit.
+
+The installed CLI 63.1.2 Python builder declares UV_VERSION 0.10.11 and minimum
+0.9.25. New `deploy/requirements-build.txt` pins 0.10.11 with independently
+retrieved PyPI Ubuntu/Windows x86_64 wheel SHA256s. The release installs binary
+wheels with --no-deps/--require-hashes, then verifies executable PATH and exact
+version before any private pull/build. This is build tooling, not a web runtime
+dependency. No new action, credential access, broader token, private cache or
+public artifact is introduced. Production review remains mandatory.
+
+New focused regression: **77 passed in 5.88s**; lint/whitespace checks pass.
+An isolated temporary Windows environment successfully installed the pinned,
+hash-checked binary wheel and reported `uv 0.10.11`; the project's existing
+virtual environment and dependencies were not changed. A fresh Actions run must still
+verify the Ubuntu build and full stage/HTTP-check/promotion path; no new full
+suite, deployment, live forecasts or weekly training completion is inferred.
+
 ## Project-scoped Vercel token compatibility fix - 2026-10-14
 
 The user supplied Actions logs showing VERCEL_TOKEN is now nonempty, but CLI

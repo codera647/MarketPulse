@@ -155,3 +155,13 @@ approval gate is unchanged. 76 focused tests pass and a local read-only
 scope-free exact-project check passes. Actions with the user's GitHub token
 still requires approval of the new commit and actual runner verification.
 No research/paper/release milestone is closed by this compatibility fix.
+
+## Cloud Python builder correction - 2026-10-14
+
+`f28bb02` full GitHub verification passed 361 tests/lint. Its release verified
+the actual GitHub project-scoped Vercel credential and pulled production, but
+failed building because uv was missing. The workflow now installs hash-checked
+uv 0.10.11 (matching the reviewed CLI Python builder), verifies PATH/version
+before pull/build, and retains production approval. 77 focused tests pass;
+new runner build/deployment/promotion evidence remains required. No milestone
+is closed merely by installing build tooling.

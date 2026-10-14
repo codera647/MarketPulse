@@ -173,6 +173,24 @@ def test_ci_commands_never_request_global_user_scope():
     assert 'environment: production' in workflow
 
 
+def test_python_builder_tool_is_pinned_hash_checked_and_verified_before_private_steps():
+    root = Path(__file__).parents[1]
+    workflow = (root / '.github/workflows/deploy-dashboard.yml').read_text()
+    lock = (root / 'deploy/requirements-build.txt').read_text()
+    assert 'uv==0.10.11' in lock
+    assert lock.count('--hash=sha256:') == 2
+    assert 'deploy/requirements-build.txt' in workflow.split('permissions:')[0]
+    installation = '--only-binary=:all: --no-deps --require-hashes -r deploy/requirements-build.txt'
+    assert installation in workflow
+    assert workflow.index('uv --version') < workflow.index('run: vercel build --prod')
+    assert workflow.index('uv --version') < workflow.index('run: vercel pull')
+    tool_step = workflow.split('Install and verify pinned Python build tool')[1].split(
+        '- name: Verify private target')[0]
+    assert "version[:2] == ['uv', '0.10.11']" in tool_step
+    assert "shutil.which('uv')" in tool_step
+    assert 'secrets.' not in tool_step and 'VERCEL_TOKEN' not in tool_step
+
+
 def test_hosted_cli_verification_does_not_request_user_scope(monkeypatch):
     import importlib.util
     path = Path(__file__).parents[1] / 'scripts/verify_hosted_dashboard.py'

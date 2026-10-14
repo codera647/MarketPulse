@@ -8,6 +8,7 @@ on:
       - 'web/**'
       - '.vercelignore'
       - '.github/workflows/deploy-dashboard.yml'
+      - 'deploy/requirements-build.txt'
       - 'src/marketpulse/cloud_deploy.py'
       - 'scripts/verify_hosted_dashboard.py'
 
@@ -61,6 +62,11 @@ jobs:
         run: |
           npm install --global vercel@63.1.2
           python -m pip install -r deploy/requirements-preflight.txt
+      - name: Install and verify pinned Python build tool (without credentials)
+        run: |
+          python -m pip install --only-binary=:all: --no-deps --require-hashes -r deploy/requirements-build.txt
+          uv --version
+          python -c "import shutil, subprocess; tool = shutil.which('uv'); assert tool, 'uv is missing from PATH'; version = subprocess.check_output([tool, '--version'], text=True).split(); assert version[:2] == ['uv', '0.10.11'], 'unexpected uv build tool version'"
       - name: Verify private target and prepare public project link
         run: python -m marketpulse.cloud_deploy --prepare
         env:

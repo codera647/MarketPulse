@@ -1,0 +1,6 @@
+# Vercel CLI 63.1.2's installed Python builder uses uv 0.10.11 (minimum 0.9.25).
+# Reviewed PyPI wheels: Ubuntu x86_64 runner and Windows x86_64 local smoke test.
+# Build tooling only; never include this lock in the hosted web runtime.
+uv==0.10.11 \
+    --hash=sha256:a0b807dcb997f44f9bbe3e8b99429a07d7c4b6e7bee39573d92c3a84170f18cf \
+    --hash=sha256:2a2663b6e02890aa3f57e14166d5dad67249208cdc0d4d3623915b437a7b0524

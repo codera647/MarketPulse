@@ -224,3 +224,14 @@ No token values or private .vercel state are printed or uploaded as artifacts.
 Approve the new source commit's production deployment after reviewing the diff;
 rerunning a workflow for an older commit does not load this fix. Local login
 checks cannot prove the different GitHub-stored token works.
+
+## Python build prerequisite
+
+Vercel's Python builder needs an executable `uv` on the Actions runner's PATH.
+The release installs `deploy/requirements-build.txt` without production
+credentials using binary-only, dependency-free, SHA256-checked pip installation.
+The pinned uv 0.10.11 matches the reviewed CLI 63.1.2 Python builder and exceeds
+its minimum 0.9.25. PATH and exact version are checked before production pull
+and `vercel build`. Build tooling stays out of the hosted web dependency file;
+no private build cache is uploaded. Approve the newest source commit's release,
+not a rerun of the old missing-uv workflow.
