@@ -19,7 +19,8 @@ dist/
 *.sqlite3*
 *.log
 *.md
-pyproject.toml
+/pyproject.toml
+!web/pyproject.toml
 requirements.lock.txt
 web/.env*
 web/.evn*

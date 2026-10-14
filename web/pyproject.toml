@@ -1,0 +1,28 @@
+[project]
+name = "marketpulse-dashboard"
+version = "0.1.0"
+description = "Private read-only MarketPulse research dashboard"
+requires-python = ">=3.13,<3.14"
+# Keep these runtime pins identical to web/requirements.txt, not the research project.
+dependencies = [
+  "annotated-doc==0.0.5",
+  "annotated-types==0.8.0",
+  "anyio==4.15.1",
+  "fastapi==0.143.0",
+  "idna==3.20",
+  "opentelemetry-api==1.45.1",
+  "psycopg==3.3.6",
+  "psycopg-binary==3.3.6",
+  "pydantic==2.14.0",
+  "pydantic_core==2.50.0",
+  "starlette==1.7.0",
+  "typing-inspection==0.4.4",
+  "typing_extensions==4.16.0",
+  "tzdata==2026.5",
+]
+
+[tool.uv]
+package = false
+
+[tool.vercel]
+entrypoint = "index.py"

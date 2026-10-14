@@ -160,6 +160,7 @@ def test_stage_preserves_guards_without_global_scope(reviewed, monkeypatch):
                            'readyState': 'READY', 'meta': {'githubCommitSha': 'a'*40}})
 
     monkeypatch.setattr(cloud_deploy, 'run', run)
+    monkeypatch.setattr(cloud_deploy, 'inspect_output', lambda root: {'status': 'PASS'})
     assert stage(reviewed) == URL
     assert len(calls) == 3
 
@@ -182,7 +183,7 @@ def test_python_builder_tool_is_pinned_hash_checked_and_verified_before_private_
     assert 'deploy/requirements-build.txt' in workflow.split('permissions:')[0]
     installation = '--only-binary=:all: --no-deps --require-hashes -r deploy/requirements-build.txt'
     assert installation in workflow
-    assert workflow.index('uv --version') < workflow.index('run: vercel build --prod')
+    assert workflow.index('uv --version') < workflow.index('run: vercel build --prod --standalone')
     assert workflow.index('uv --version') < workflow.index('run: vercel pull')
     tool_step = workflow.split('Install and verify pinned Python build tool')[1].split(
         '- name: Verify private target')[0]

@@ -165,3 +165,16 @@ uv 0.10.11 (matching the reviewed CLI Python builder), verifies PATH/version
 before pull/build, and retains production approval. 77 focused tests pass;
 new runner build/deployment/promotion evidence remains required. No milestone
 is closed merely by installing build tooling.
+
+## Cloud standalone packaging correction - 2026-10-14
+
+`7db3353` full GitHub verification passed 362 tests/lint; its release completed
+uv installation, private authentication, production pull and build, but staging
+failed with a missing web/pyproject.toml. The web-only manifest and narrowed
+ignore rule now preserve the app's explicit metadata without research packages.
+Standalone builds and a credential-free pre-upload completeness/link/private-
+file check are implemented, with a second check inside staging. 95 local tests
+pass, 3 symlink tests require Linux privileges; the Linux release test job
+includes them. All 14 web dependency pins resolve for Linux/Python 3.13. Actual
+new runner deployment/HTTP/promotion evidence is still required. No empirical
+research, live forecast, weekly training or release milestone is closed here.

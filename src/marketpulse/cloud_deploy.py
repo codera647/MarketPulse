@@ -8,6 +8,7 @@ import subprocess
 from pathlib import Path
 from urllib.parse import urlsplit
 
+from marketpulse.cloud_package import inspect_output
 from marketpulse.vercel_cli import command
 
 
@@ -90,6 +91,7 @@ def stage(root: Path):
     check_link(root, config)
     config, sha = context(root)
     check_project(config)
+    inspect_output(root)
     url = deployment_url(run(['deploy', '--prebuilt', '--prod', '--skip-domain', '--yes',
                               '--meta', f'githubCommitSha={sha}'], timeout=900))
     deployment = json.loads(run(['api', '/v13/deployments/' + urlsplit(url).hostname

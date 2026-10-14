@@ -235,3 +235,19 @@ its minimum 0.9.25. PATH and exact version are checked before production pull
 and `vercel build`. Build tooling stays out of the hosted web dependency file;
 no private build cache is uploaded. Approve the newest source commit's release,
 not a rerun of the old missing-uv workflow.
+
+## Standalone web package and pre-upload verification
+
+The dashboard declares its isolated runtime in web/pyproject.toml and retains
+web/requirements.txt for minimal test installs; their pins must match. Never
+copy the root research manifest into web. The root manifest is excluded with
+an anchored /pyproject.toml rule; the explicit web manifest must be included.
+
+The release runs `vercel build --prod --standalone`, followed by
+`python -m marketpulse.cloud_package` without deployment credentials. Staging
+repeats this check before upload. Required evidence: Build Output API v3,
+configured Python handler and explicit dashboard manifest/app/static files,
+no broken or outside-package filesystem links, and no env/sqlite files. Counts
+and redacted status only are logged; never upload .vercel state as an Actions
+artifact. The actual Linux package still needs runner/deployment validation;
+passing mocked package fixtures is not deployment success.

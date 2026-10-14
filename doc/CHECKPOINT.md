@@ -1,5 +1,39 @@
 # MarketPulse checkpoint for the next agent
 
+## Standalone Python package correction - 2026-10-14
+
+Verified commit `7db3353ad246aa1b067e86baff653d16b9e63c49`: full GitHub CI run
+38529798534 passed **362 tests in 234.77s** and lint. Release run 38529798693
+installed hash-pinned uv, verified the private project/token, pulled production,
+and successfully built in 2s. Staging failed; private HTTP verification and
+promotion were skipped. Vercel independently reports deployment
+`dpl_4ov5rkRiEUnG2hCyAzFjZRiEcAUh` ERROR/ENOENT reading
+`/vercel/path0/web/pyproject.toml`. Separate READY deployments for this commit
+also exist; do not treat them as successful completion of this Actions release.
+
+The reviewed builder converts requirements.txt into a generated pyproject.toml;
+our broad ignore rule excluded that basename and no explicit web manifest was
+tracked. Added dashboard-only web/pyproject.toml, explicit index.py entrypoint,
+Python 3.13 and non-package uv settings. The root research manifest remains
+excluded with /pyproject.toml; web manifest is explicitly included. Dashboard
+requirements/manifest pins match. Existing root-lock opentelemetry-api 1.45.1
+is also explicitly pinned as a FastAPI transitive dependency; no ML/provider
+dependency was added. Linux/Python 3.13 uv resolution independently matches all
+14 runtime pins exactly. Research dependencies/environment remain untouched.
+
+CLI 63.1.2 help confirms --standalone inlines function dependencies; release now
+uses it. New credential-free cloud_package verification runs before upload and
+again inside staging. It bounds inspection, rejects broken/outside links and
+private env/sqlite files, checks Build Output API v3, Python handlers, dashboard
+manifest and required app/static assets. It never logs artifact contents or
+uploads private build state. Production approval and identity/privacy/commit
+guards remain unchanged. Local tests pass **95 cases, 3 skipped in 5.00s**: real symlink
+creation requires Windows privilege unavailable here; those tests run on Linux
+in the release verify job. Repository lint and whitespace checks pass. New runner
+verification is not yet complete. The standalone Linux build/deployment/HTTP/promotion still
+needs actual Actions evidence; no hosted success or full-project completion is
+claimed by this packaging correction.
+
 ## GitHub Python build tooling correction - 2026-10-14
 
 Independently inspected Actions for `f28bb02b89e298a136a118ade6c29542382cbd27`:
