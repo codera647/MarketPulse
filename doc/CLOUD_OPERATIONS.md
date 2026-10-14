@@ -1,6 +1,38 @@
 # Private cloud rollout
 
-## Current state: provisioned, not deployed
+## Rollout in progress - 14 October 2026
+
+The repository is now public at the user's request; data/results remain private.
+The user reports all six production secrets, the storage endpoint, required
+reviewer and main-only environment restriction saved. Do not request values.
+`cloud-preflight.yml` verifies worker/database/storage/Alpaca/Vercel access with
+bounded reads on the reviewed main commit, after production environment approval.
+It never logs provider bodies or uploads private Actions artifacts.
+
+Code-managed migrations 0001/0002 were tested on the existing schema-review
+branch and then applied to production. Thirteen rollback-only database checks
+passed, no fixture rows retained. The owner connection remains local and direct
+for migrations only. Compact projection/object/job tables and reader-only views
+are installed. Cloud writer ownership is fenced; expired jobs are retained as
+UNKNOWN. No automatic retry of uncertain effects or deletion authority.
+
+Cloud publication uses immutable private objects with checksum read-back, native
+SQLite backup snapshots and completed Trailforge receipts. Existing research is
+imported only after independent pinned-report, probability and metric replay.
+Historical projections retain `HISTORICAL_APPROXIMATE` / `live=false`.
+
+Hosted source lives in `web/`, a small read-only FastAPI deployment, separate
+from the local Streamlit dashboard and full training lock. Before deployment,
+verify All Deployments Vercel Authentication, exact team/project and reader-only
+server environment. Source visibility does not authorize public result display.
+No hosted deployment, forward worker or weekly training completion is inferred
+from source implementation; see CHECKPOINT for verified execution evidence.
+
+Focused cloud/dashboard regression suite: 48 passed; repo lint passes. Actual
+worker schedules, rolling weekly retraining and retention remain disabled while
+integration tests are completed. Previous setup snapshot follows.
+
+## Provisioning snapshot - 13 October 2026
 
 The user confirmed permission for private cloud data storage/training and private
 result display, selected Neon Free, requested weekly batch retraining and daily

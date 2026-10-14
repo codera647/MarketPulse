@@ -1,5 +1,51 @@
 # MarketPulse checkpoint for the next agent
 
+## Cloud state and hosted dashboard implementation - 2026-10-14
+
+User made `codera647/MarketPulse` public; connector independently confirms it.
+Source is public, not provider data or results. All six CI secrets (including
+VERCEL_TOKEN) and the storage endpoint were reported saved by the user. The
+user additionally reports production environment reviewer `codera647`, main-only
+deployment restriction and self-review allowed. A credential-bearing run still
+requires approval of its exact commit; do not bypass that review.
+
+Migrations 0001/0002 were installed and checksum replayed on the existing review
+branch, then applied to production after review checks. Thirteen rollback-only
+review checks pass: reader views/table boundaries, worker DDL/delete/overwrite
+boundaries and completion checkpoint constraints. No fixture rows retained.
+Use direct owner endpoints for migrations only; application connections remain
+pooled restricted roles. Worker cannot DELETE history or overwrite projections.
+
+New CloudState stores checksum-verified immutable private objects, explicit
+single-writer ownership/lease fences and native checkpoint references. Expired
+attempts become UNKNOWN, never stolen/reset/repeated. SQLite backup includes
+committed WAL pages and explicitly closes connections (a Windows file-lock
+regression was caught and fixed). The research publisher independently replays
+the existing pinned native research projections before private publication.
+It does not train, fetch articles, promote models or pretend replay is live.
+
+Hosted `web/` is an isolated small FastAPI runtime with no ML/provider dependencies.
+Graphite/teal UI, company/model/period filters, monthly accuracy comparison,
+class counts, equal-class recall, saved replay with separate outcome reveal,
+provenance and actual cloud-job views. API uses restricted reader views,
+parameterized queries, bounded results, private/no-store responses and redacted
+errors. No credentials, model files, raw articles or owner connection in browser.
+Vercel All Deployments Authentication must be independently checked before any
+result-serving deployment. Never deploy the repository root's default output.
+
+New focused cloud/dashboard suite: **48 passed in 14.12s**; repository lint passes.
+Full suite not rerun for this stage. The previous committed 9458d8b full GitHub
+CI run independently passed (run 38440359967). New cloud-preflight workflow uses
+reviewed SHA-pinned actions, lightweight locked dependencies, production review
+gate, exact-main/repo restriction, step-scoped credentials, bounded authenticated
+reads only and no private artifacts/logs. Its live run is not yet verified.
+
+Still pending: actual hosted privacy/data verification, worker credentials in
+Actions, forward collection/features/inference/outcomes, weekly rolling refits,
+durable restore/reconciliation integration and safe retention. Schedules remain
+disabled; no research quality/paper/milestone gate is closed by this stage.
+The dated sections below are earlier snapshots, not current cloud completion.
+
 ## Private cloud bootstrap - 2026-10-13
 
 User selected Neon Free, Vercel CLI, weekly batch retraining, daily forecasts

@@ -1,0 +1,9 @@
+.env*
+.evn*
+.git/
+__pycache__/
+*.sqlite*
+*.cbm
+*.ubj
+*.lgb
+tests/

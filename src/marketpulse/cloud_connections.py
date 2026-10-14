@@ -53,14 +53,15 @@ def s3_client(values):
     )
 
 
-def inspect_connections(values) -> dict:
+def inspect_connections(values, *, worker_only=False) -> dict:
     import psycopg
 
     results = {}
-    for key, role in (
+    roles = (
         ("MARKETPULSE_DATABASE_URL", "marketpulse_worker"),
         ("MARKETPULSE_DASHBOARD_DATABASE_URL", "marketpulse_reader"),
-    ):
+    )
+    for key, role in roles[:1] if worker_only else roles:
         uri = database_uri(values[key], role)
         with psycopg.connect(uri, connect_timeout=10, autocommit=True) as db:
             record = db.execute(

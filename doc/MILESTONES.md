@@ -1,5 +1,13 @@
 # GitHub delivery milestones
 
+2026-10-14: user made repository public while retaining private data/results.
+Cloud schema 0001/0002 passes 13 rollback-only review-branch checks and is migrated
+to production. Forty-eight focused cloud/dashboard tests and lint pass. Compact
+read-only web UI, private-object/native checkpoints and reviewed-main preflight
+workflow implemented; live worker/deployment verification remains pending.
+Schedules, model promotion and broker orders remain disabled. No GitHub research
+milestone closure is claimed by this implementation stage.
+
 2026-10-13: local real research dashboard extends the M07 presentation surface
 with five evidence-led views, saved prediction reveal, charts and read-only
 native operation checks. Default research mode is separate from `--mode fixture`.

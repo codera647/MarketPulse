@@ -1,0 +1,8 @@
+# Deploy only the reviewed small web application, never repository docs/data/models.
+*
+!web/
+!web/**
+web/.env*
+web/.evn*
+web/__pycache__/
+web/.vercel/
